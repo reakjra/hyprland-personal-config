@@ -14,7 +14,7 @@ This README includes tips, scripts, and setup instructions that I've collected t
 
 ---
 
-## 📦 Mounting NTFS Drives
+##  Mounting NTFS Drives
 
 First, install the NTFS driver:
 
@@ -61,7 +61,7 @@ ls -l ~/MountedDrive
 ```
 ---
 
-## 🖥️ GRUB Resolution Fix
+##  GRUB Resolution Fix
 
 By default, GRUB might boot in a low-res, ugly-looking mode. Here's how to set it to 1920x1080.
 
@@ -83,7 +83,7 @@ GRUB_GFXPAYLOAD_LINUX=keep
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-> 💡 Tip: If using a distro with different paths (like Fedora or Btrfs), double-check your `/boot` structure.
+ Tip: If using a distro with different paths (like Fedora or Btrfs), double-check your `/boot` structure.
 
 4. Reboot and enjoy crispy-clear boot text!
 
@@ -95,7 +95,7 @@ Check the dedicated [undervolt guide](./undervolt/README.md) in this repository 
 
 ---
 
-## 🌈 Extra: Gamma, Contrast and Saturation
+## Extra: Gamma, Contrast and Saturation
 
 Most in-game settings let you tweak gamma/contrast, but **saturation** is trickier on Linux.
 

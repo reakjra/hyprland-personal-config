@@ -10,6 +10,8 @@ This README includes tips, scripts, and setup instructions that I've collected t
 - [📦 Mounting NTFS Drives](#mounting-ntfs-drives)
 - [🖥️ GRUB Resolution Fix](#grub-resolution-fix)
 - [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/blob/main/gpu/readme.md)
+- [Date & Time Fix for Dual Boot](#date--time-fix-for-dual-boot)
+- [Discord Update & White Screen Fix](#discord-update--white-screen-fix)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
 
 ---
@@ -88,6 +90,119 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 4. Reboot and enjoy crispy-clear boot text!
 
 ---
+
+## Date & Time Fix for Dual Boot
+
+If you dual boot with Windows, Windows may show the wrong time due it using local RTC (real-time clock) which leads Linux having the correct time but Windows doesn´t.
+
+Fix it by running:
+
+```bash
+sudo timedatectl set-local-rtc 1 --adjust-system-clock
+```
+
+This tells Linux to treat the hardware clock as local time and adjust the system clock accordingly. In windows remember to go to settings and disable and enable the automatic sync option.
+
+---
+
+## Discord Update & White Screen Fix
+
+### Problem:
+
+Discord sometimes asks for an update to version `0.0.0.100` and then shows a completely white window. Changing distros or reinstalling doesn't fix it.
+
+### Fix steps:
+
+1. Kill any running Discord processes:
+
+```bash
+pkill discord
+pkill Discord
+```
+
+2. Uninstall Discord completely:
+
+- If installed via pacman:
+
+```bash
+sudo pacman -Rns discord
+```
+
+- If installed via AUR (e.g. yay):
+
+```bash
+yay -Rns discord
+```
+
+3. Remove all Discord-related user config and cache files:
+
+```bash
+rm -rf ~/.cache/discord ~/.cache/Discord
+rm -rf ~/.config/discord ~/.config/Discord
+rm -rf ~/.local/share/discord ~/.local/share/Discord
+rm -rf ~/.local/state/discord ~/.local/state/Discord
+```
+
+4. Remove any system-wide installation directories (if present):
+
+```bash
+sudo rm -rf /opt/discord
+```
+
+5. Remove any old desktop entry files:
+
+```bash
+rm -f ~/.local/share/applications/discord.desktop
+```
+
+6. Reinstall Discord:
+
+```bash
+sudo pacman -S discord
+```
+
+7. Force Discord to skip its internal host update:
+
+Create or edit the file:
+
+```bash
+~/.config/discord/settings.json
+```
+
+Add the following content:
+
+```json
+{
+  "SKIP_HOST_UPDATE": true
+}
+```
+
+8. Temporary test to confirm it works (run from terminal):
+
+```bash
+QT_QPA_PLATFORM=xcb discord
+```
+
+9. Fix desktop entry:
+
+Copy the system-wide desktop file to your local directory:
+
+```bash
+cp /usr/share/applications/discord.desktop ~/.local/share/applications/
+```
+
+Edit `~/.local/share/applications/discord.desktop`, change the `Exec=` line to:
+
+```bash
+Exec=env QT_QPA_PLATFORM=xcb /usr/bin/discord
+```
+
+Save the file and update the desktop database:
+
+```bash
+update-desktop-database ~/.local/share/applications/
+```
+
 
 ## Extra: Gamma, Contrast and Saturation
 

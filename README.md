@@ -1,35 +1,110 @@
-# hyprland-config
+# 🛠️ Hyprland Config - My Personal Linux Setup
 
-## Mounting Drives
+Welcome to my personal configuration and survival guide for setting up Hyprland and gaming-related tweaks on Arch-based systems (EndeavourOS).  
+This README includes tips, scripts, and setup instructions that I've collected to help me rebuild my setup quickly whenever needed.
 
-first we download ntfs-3g
-```sh
+---
+
+## 📚 Table of Contents
+
+- [📦 Mounting NTFS Drives](#mounting-ntfs-drives)
+- [🖥️ GRUB Resolution Fix](#grub-resolution-fix)
+- [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/gpu/readme.md)
+- [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
+
+---
+
+## 📦 Mounting NTFS Drives
+
+First, install the NTFS driver:
+
+```bash
 sudo pacman -S ntfs-3g
 ```
-then we get all the info we need about our drives
-```sh
-lbslk -o NAME,SIZE,UUID
+
+Get the list of drives and their UUIDs:
+
+```bash
+lsblk -o NAME,SIZE,UUID
 ```
 
-then we make one or more Dir for our drives
-```sh
+Create a mount point (directory):
+
+```bash
 mkdir -p ~/MountedDrive
 ```
-we mount it to check if it works
-```sh
-sudo mount ntfs-3g /dev/<drive name> ~/MountedDrive -o uid=$(id -u),gid=$(id -g)
+
+Mount manually to test:
+
+```bash
+sudo mount ntfs-3g /dev/<drive-name> ~/MountedDrive -o uid=$(id -u),gid=$(id -g)
 ```
-if it works, we proceed to mount them automatically at every boot. Edit fstab
-```sh
+
+If it works, edit `fstab` to mount the drive automatically at boot:
+
+```bash
 sudo nano /etc/fstab
 ```
-and we add:
-```sh
-UUID=<drive ID> /home/<username>/MountedDrive ntfs-3g defaults,uid=1000,gid=1000,rw,user,exec,umask=000 0 0
+
+Add this line (replace with your actual UUID and username):
+
+```bash
+UUID=<drive-uuid> /home/<username>/MountedDrive ntfs-3g defaults,uid=1000,gid=1000,rw,user,exec,umask=000 0 0
 ```
-then we check if everything works:
-```sh
+
+Test it:
+
+```bash
 sudo umount ~/MountedDrive
 sudo mount -a
 ls -l ~/MountedDrive
 ```
+---
+
+## 🖥️ GRUB Resolution Fix
+
+By default, GRUB might boot in a low-res, ugly-looking mode. Here's how to set it to 1920x1080.
+
+1. Edit the GRUB config:
+```bash
+sudo nano /etc/default/grub
+```
+
+2. Add or modify these lines:
+
+```bash
+GRUB_GFXMODE=1920x1080
+GRUB_GFXPAYLOAD_LINUX=keep
+```
+
+3. Save the file and update GRUB:
+
+```bash
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+> 💡 Tip: If using a distro with different paths (like Fedora or Btrfs), double-check your `/boot` structure.
+
+4. Reboot and enjoy crispy-clear boot text!
+
+---
+
+## ❄️ Undervolting NVIDIA
+
+Check the dedicated [undervolt guide](./undervolt/README.md) in this repository for my personal scripts and configs.
+
+---
+
+## 🌈 Extra: Gamma, Contrast and Saturation
+
+Most in-game settings let you tweak gamma/contrast, but **saturation** is trickier on Linux.
+
+### Options:
+
+- Use monitor hardware controls (annoying but reliable)
+- Try tools like:
+  - `gamescope` (if supported)
+  - `xrandr` (less useful on Wayland)
+  - Color profiles (ICC) or HDR LUTs if you want to go deeper
+
+---

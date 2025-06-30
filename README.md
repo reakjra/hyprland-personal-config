@@ -12,6 +12,7 @@ This README includes tips, scripts, and setup instructions that I've collected t
 - [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/blob/main/gpu/readme.md)
 - [🕛 Date & Time Fix for Dual Boot](#date--time-fix-for-dual-boot)
 - [🗣️ Discord Update & White Screen Fix](#discord-update--white-screen-fix)
+- [🎮 lib32* games fixes](#lib32-fixes)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
 
 ---
@@ -202,6 +203,17 @@ Save the file and update the desktop database:
 ```bash
 update-desktop-database ~/.local/share/applications/
 ```
+
+## lib32 fixes
+
+In some games (like Resident Evil 2 Remake & Days Gone Remastered) you may encounter a bunch of troubles. Like crashing after cutscenes or the game being completely unstable. That can be fixed with: 
+
+```bash
+yay -S lib32-gstreamer lib32-gst-plugins-base lib32-gst-plugins-good lib32-gst-plugins-bad lib32-gst-plugins-ugly \
+       lib32-libva lib32-libx264 lib32-libvpx lib32-libmpeg2 lib32-openal \
+       lib32-libpulse lib32-ffmpeg lib32-vulkan-icd-loader
+```
+> Mind it may take a lot to process.
 
 
 ## Extra: Gamma, Contrast and Saturation

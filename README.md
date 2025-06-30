@@ -9,7 +9,7 @@ This README includes tips, scripts, and setup instructions that I've collected t
 
 - [📦 Mounting NTFS Drives](#mounting-ntfs-drives)
 - [🖥️ GRUB Resolution Fix](#grub-resolution-fix)
-- [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/gpu/readme.md)
+- [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/blob/main/gpu/readme.md)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
 
 ---
@@ -86,12 +86,6 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
  Tip: If using a distro with different paths (like Fedora or Btrfs), double-check your `/boot` structure.
 
 4. Reboot and enjoy crispy-clear boot text!
-
----
-
-## ❄️ Undervolting NVIDIA
-
-Check the dedicated [undervolt guide](./undervolt/README.md) in this repository for my personal scripts and configs.
 
 ---
 

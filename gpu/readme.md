@@ -121,6 +121,8 @@ exec-once = bash -c "sleep 1 && xhost +si:localuser:root && sleep 2 && /home/<us
 
 This will apply power limits and start fan control on startup.
 
+> NOTE: Power limiting the GPU might affect your performances, however, with my current 3060 Ti from `200w` to `130w` I've never encountered performance issues and barely noticeable fps loss.
+
 ---
 
 ## Troubleshooting

@@ -10,8 +10,8 @@ This README includes tips, scripts, and setup instructions that I've collected t
 - [📦 Mounting NTFS Drives](#mounting-ntfs-drives)
 - [🖥️ GRUB Resolution Fix](#grub-resolution-fix)
 - [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/blob/main/gpu/readme.md)
-- [🕛Date & Time Fix for Dual Boot](#date--time-fix-for-dual-boot)
-- [🗣️Discord Update & White Screen Fix](#discord-update--white-screen-fix)
+- [🕛 Date & Time Fix for Dual Boot](#date--time-fix-for-dual-boot)
+- [🗣️ Discord Update & White Screen Fix](#discord-update--white-screen-fix)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
 
 ---

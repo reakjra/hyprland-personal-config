@@ -1,72 +1,132 @@
-<h1>Guide</h1>
-<h2>1. Update the system</h2>
+# NVIDIA Undervolting & Fan Control Guide
 
-```yaml
+A simple step-by-step guide to undervolt your NVIDIA GPU on Linux (Arch-based)  
+using power limits and fan control scripts, integrated with Hyprland.
+
+---
+
+## Table of Contents
+
+- [1. Update the system](#1-update-the-system)
+- [2. Download and set scripts](#2-download-and-set-scripts)
+- [3. Configure sudoers](#3-configure-sudoers)
+- [4. Install Nvidia utils and xhost](#4-install-nvidia-utils-and-xhost)
+- [5. Enable CoolBits and add scripts to Hyprland config](#5-enable-coolbits-and-add-scripts-to-hyprland-config)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## 1. Update the system
+
+Keep your system up-to-date:
+
+```bash
 sudo pacman -Syu
 ```
-<h2>2. Scripts</h2>
 
-Download the scripts files and place them in 
-```yaml
-~/
+---
+
+## 2. Download and set scripts
+
+Download your scripts (`nvidia_fan_control.sh` and `gpu-limit.sh`) and place them in your home directory:
+
+```bash
+~/ 
 ```
-Then, make them a runnable script
-```yaml
+
+Make them executable:
+
+```bash
 sudo chmod +x ~/nvidia_fan_control.sh
 sudo chmod +x ~/gpu-limit.sh
 ```
-<h2>3. Add sudoers</h2>
 
-Update sudoers permissions to make the scripts run automatically without requiring any password which may block them from running.
+---
 
-```yaml
+## 3. Configure sudoers
+
+Allow the scripts to run commands without password prompts:
+
+```bash
 sudo nano /etc/sudoers.d/gpucontrol
 ```
-then add
-```yaml
+
+Add the following lines (replace `<username>` with your actual username):
+
+```text
 <username> ALL=(ALL) NOPASSWD: /usr/bin/nvidia-settings
 <username> ALL=(ALL) NOPASSWD: /usr/bin/nvidia-smi
 <username> ALL=(ALL) NOPASSWD: /usr/bin/env
 ```
-<h2>4. Install and set Nvidia utils and xhost</h2>
 
-Download Nvidia Utils and xorg-xhost:
-```yaml
+Save and exit.
+
+---
+
+## 4. Install Nvidia utils and xhost
+
+Install necessary packages:
+
+```bash
 sudo pacman -S nvidia nvidia-utils nvidia-settings xorg-xhost
 ```
-Now, proceed to use xhost, open nvidia-settings and enable fun curve:
-```yaml
+
+Run xhost to allow root to access X:
+
+```bash
 xhost +si:localuser:root
 sudo nvidia-settings
 ```
-<h2>5. Enable CoolBits for Nvidia and add the scripts in hyprland.conf</h2>
 
-First we add CoolBits to Nvidia configuration:
-```yaml
+Use `nvidia-settings` GUI to enable and customize your fan curve.
+
+---
+
+## 5. Enable CoolBits and add scripts to Hyprland config
+
+### Enable CoolBits in the Nvidia config
+
+Edit or create the Nvidia X11 config file:
+
+```bash
 sudo nano /etc/X11/xorg.conf.d/20-nvidia.conf
 ```
-then add: 
+
+Add the following section:
+
 ```sh
 Section "Device"
     Identifier "Nvidia Card"
     Driver "nvidia"
-    Option "CoolBits" "4" # Or "8", "12", "28" for more features. "4" is usually enough for fan control.
+    Option "CoolBits" "4"  # "4" enables fan control; "8", "12", or "28" enable more features.
 EndSection
 ```
-then, once done and assured everything else is done and working, we add the `exec-once` to the `hyprland.conf` file, assuring everything runs when booting.
-```yaml
+
+Save and exit.
+
+### Add the scripts to your `hyprland.conf`
+
+Edit your Hyprland config:
+
+```bash
 sudo nano ~/.config/hypr/hyprland.conf
 ```
-add: 
+
+Add these lines (replace `<username>`):
+
 ```sh
 exec = ~/gpu-limit.sh
 exec-once = bash -c "sleep 1 && xhost +si:localuser:root && sleep 2 && /home/<username>/nvidia_fan_control.sh &"
 ```
 
+This will apply power limits and start fan control on startup.
 
-<h2>+___+</h2>
+---
 
-if there's any login issue, it's probably due the SDDM having troubles with Nvidia (especially Candy), try to add this in the `hyprland.conf`:
+## Troubleshooting
+
+If you encounter login or display issues (especially with SDDM and NVIDIA), try adding this to `hyprland.conf`:
+
 ```sh
 env = WLR_NO_HARDWARE_CURSOR,1
 env = __GL_VRR_RATE,0
@@ -74,3 +134,11 @@ env = LIBVA_DRIVER_NAME,nvidia
 
 exec-once = dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
 ```
+
+---
+
+:+1: Enjoy cooler and quieter gaming sessions on Linux with your NVIDIA GPU!
+
+---
+
+*Feel free to suggest improvements or open issues if you run into trouble.*

@@ -10,8 +10,8 @@ This README includes tips, scripts, and setup instructions that I've collected t
 - [📦 Mounting NTFS Drives](#mounting-ntfs-drives)
 - [🖥️ GRUB Resolution Fix](#grub-resolution-fix)
 - [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/blob/main/gpu/readme.md)
-- [Date & Time Fix for Dual Boot](#date--time-fix-for-dual-boot)
-- [Discord Update & White Screen Fix](#discord-update--white-screen-fix)
+- [🕛Date & Time Fix for Dual Boot](#date--time-fix-for-dual-boot)
+- [🗣️Discord Update & White Screen Fix](#discord-update--white-screen-fix)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
 
 ---
@@ -68,6 +68,7 @@ ls -l ~/MountedDrive
 By default, GRUB might boot in a low-res, ugly-looking mode. Here's how to set it to 1920x1080.
 
 1. Edit the GRUB config:
+
 ```bash
 sudo nano /etc/default/grub
 ```
@@ -109,9 +110,8 @@ This tells Linux to treat the hardware clock as local time and adjust the system
 
 ### Problem:
 
-Discord sometimes asks for an update to version `0.0.0.100` and then shows a completely white window. Changing distros or reinstalling doesn't fix it.
-
-### Fix steps:
+Discord sometimes asks for an update to version `0.0.0.100` and then shows a completely white window. Reinstalling doesn't fix it.
+Fix steps:
 
 1. Kill any running Discord processes:
 

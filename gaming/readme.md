@@ -23,7 +23,33 @@ sudo pacman -S bottles steam
 ~/.local.share/bottles/runners
 ```
 
-> In `steam` we go to settings > Compatibility > Enable compatibility > GE-Proton10-8 | When running a game that is not Linux-native remember to right-click on it > Proprierties > Compatibility > Check `Force the use of a specific Steam play compatibility tool` and select `GE-Proton10-8`
+> In `steam` we go to `settings` > `Compatibility` > `Enable compatibility` > `GE-Proton10-8`
+
+> When running a game that is not Linux-native remember to `right-click on it` > `Proprierties` > `Compatibility` > Check `Force the use of a specific Steam play compatibility tool` and select `GE-Proton10-8`
+
 
 > In `Bottles` click the `+` to create a new bottle. Select the `gaming` type, select `GE-Proton10-8` runner and let it initialize.
+
+# Non-Steam Games
+
+> essentially, I'd use steam as the main library of all the games. For all the games that have .exe(s) it should be simple as adding the .exe into steam's library and forcing game compatibility.
+
+> Since the game's ugly, go to [SteamGridDB](https://www.steamgriddb.com/) where you can find all the icons, banners, artworks of the games you want. Download them, I reccomend to create an `Icons` folder inside each game's directory where you´d put the game's banners. On steam, right click on the game, click `manage` and find out how to change every banner available. If you go to proprierties and click the little grey icon it'll let you change the small icon of the game. Mind that it may require to restart steam to see the changes.
+
+# Adding a Bottles' game on Steam
+
+> Essentially the same. However, you need to use `bottles-cli` to run the game. 
+
+1. Add a random app to the Steam's library, doesn´t matter what, since after that, you're gonna erase the `target` and `start in` fields. 
+2. This is the standard command to run an application through bottles-cli:
+   ```sh
+   bottles-cli run -b "<bottle_name>" -e "<directory>"
+   ```
+3. We're gonna take as example Zenless Zone Zero. Mind I've downloaded it in: `/home/<username>/nvme1n1p6/ZenlessZoneZero Game/`
+   > NOTE: Keep in mind that bottles need to reach Z: in this case, since the game is not in the Bottle virtual C: drive. I don´t know if with flatpak version works easily as that.
+   Addressing where our .exe game is, we change the Steam's application `target` to:
+   ```sh
+   bottles-cli run -b "ge-proton10-7" -e "Z:\\home\\reakjra\\nvme1n1p6\\ZenlessZoneZero Game\\ZenlessZoneZero.exe"  
+   ```
+   > NOTE: We're not going to force compatibility since Bottles will handle everything.
 

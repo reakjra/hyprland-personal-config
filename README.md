@@ -284,7 +284,7 @@ sudo nano ~/.config/hypr/userprefs.conf
 
 exec-once = [workspace 1 silent] steam -bigpicture
 windowrule = fullscreen, class:^Steam$ # Ensure Steam Big Picture is fullscreen
-windowrulev2 = workspace 1, class:^(steam_app_.*)$
+windowrulev2 = workspace 1, class:^(steam_app_.*)$ # This will keep any game running in the first workspace along Steam even if you're working on another workspace.
 
 
 windowrulev2 = workspace 2 silent, class:^(discord)$

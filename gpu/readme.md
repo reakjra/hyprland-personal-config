@@ -1,7 +1,6 @@
 # NVIDIA Undervolting & Fan Control Guide
 
-A simple step-by-step guide to undervolt your NVIDIA GPU on Linux (Arch-based)  
-using power limits and fan control scripts, integrated with Hyprland.
+> step-by-step guide to undervolt your NVIDIA GPU on Lusing power limits and fan control scripts
 
 ---
 
@@ -136,10 +135,6 @@ env = LIBVA_DRIVER_NAME,nvidia
 
 exec-once = dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
 ```
-
----
-
-:+1: Enjoy cooler and quieter gaming sessions on Linux with your NVIDIA GPU!
 
 ---
 

@@ -5,7 +5,7 @@ GREEN="\e[32m"
 RED="\e[31m"
 CYAN="\e[36m"
 YELLOW="\e[33m"
-PINK="\e[38;5;200m"
+PINK="\e[38m"
 RESET="\e[0m"
 
 pause() {
@@ -516,6 +516,7 @@ $USER ALL=(ALL) NOPASSWD: /usr/bin/nvidia-smi
 $USER ALL=(ALL) NOPASSWD: /usr/bin/env
 EOF
     else
+        echo ""
         echo "⚠️ Skipping sudoers setup may prevent scripts from working correctly."
     fi
 
@@ -533,6 +534,7 @@ EndSection
 EOF
         echo "✅ CoolBits set to 31. You do NOT need to reboot."
     else
+        echo ""
         echo "⚠️ Skipping CoolBits setup will break fan control."
     fi
 
@@ -650,6 +652,7 @@ EOF
             echo "$AUTOSTART_LINE2"
         fi
     else
+        echo ""
         echo "⚠️ Skipping autostart. You'll need to launch the scripts manually."
     fi
 

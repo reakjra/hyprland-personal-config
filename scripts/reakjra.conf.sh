@@ -493,7 +493,7 @@ nvidia_fan_setup() {
     echo ""
     echo "This setup will allow you to apply a custom fan curve and undervolt your NVIDIA GPU."
     echo ""
-    echo -e "⚠️ These settings are tuned for a 2-fan GPU (e.g., 3060 Ti). Adjust only if you know what you're doing. Mind the Power Limit is set to 130w. Change it in ${CYAN}reakjra.conf.sh${RESET} if you need to.`"
+    echo -e "⚠️ These settings are tuned for a 2-fan GPU (e.g., 3060 Ti). Adjust only if you know what you're doing. Mind the Power Limit is set to 130w. Change it in ${CYAN}reakjra.conf.sh${RESET} if you need to."
     echo
 
     # Step 1: Install Required Packages

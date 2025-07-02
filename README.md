@@ -292,7 +292,7 @@ exec-once = sh -c 'sleep 5 && discord'
 exec-once = [workspace 3 silent] firefox
 ```
 
-> The core idea is to make the gaming library all inside Steam. If it is needed to run something through Bottles, Lutris, etc. I´d make add a non-Steam game into Steam's library and target it with the needed cli.
+> The core idea is to make the gaming library all inside Steam. If it is needed to run something through Bottles, Lutris, etc. I´d add a non-Steam game into Steam's library and target it with the needed cli.
 
 
 

@@ -414,7 +414,7 @@ wm_settings_menu() {
 # 🌸 WM SETTINGS: USERPREFS
 update_userprefs() {
     echo ""
-    echo "⚠️ These settings are personal and intended ONLY for ${PINK}HyDE${RESET} (Hyprland dotfiles)."
+    echo "⚠️ These settings are personal and intended ONLY for HyDE$ (Hyprland dotfiles)."
     echo "📁 Target file: ~/.config/hypr/userprefs.conf"
     echo ""
     read -p "Do you want to continue? (y/n): " confirm

@@ -14,6 +14,9 @@ i5-13600K
 
 ---
 
+## [Installation Tool](https://github.com/reakjra/hyprland-personal-config/tree/main/scripts)
+
+
 ## 📚 Table of Contents
 
 - [⌨️ US INTL. Layout](#us-intl-layout)

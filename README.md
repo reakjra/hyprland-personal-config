@@ -14,6 +14,7 @@ i5-13600K
 
 ## 📚 Table of Contents
 
+- [⌨️ US INTL. Layout](#us-intl-layout)
 - [📦 Mounting NTFS Drives](#mounting-ntfs-drives)
 - [🖥️ GRUB Resolution Fix](#grub-resolution-fix)
 - [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/blob/main/gpu/readme.md)
@@ -21,6 +22,22 @@ i5-13600K
 - [🗣️ Discord Update & White Screen Fix](#discord-update--white-screen-fix)
 - [🎮 lib32* games fixes](#lib32-fixes)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
+- [🌸 Setting up WM](#setting-up-wm)
+
+---
+
+## US INTL. Layout
+
+Since it seems HyDE doesn´t apply the US INTL. Layout I need: 
+```sh
+sudo nano ~/.config/hypr/userprefs.conf
+
+
+input {
+     kb_layout = us
+     kb_variant = intl
+}
+```
 
 ---
 
@@ -211,6 +228,8 @@ Save the file and update the desktop database:
 update-desktop-database ~/.local/share/applications/
 ```
 
+---
+
 ## lib32 fixes
 
 In some games (like Resident Evil 2 Remake & Days Gone Remastered) you may encounter a bunch of troubles. Like crashing after cutscenes or the game being completely unstable. That can be fixed with: 
@@ -236,3 +255,44 @@ Most in-game settings let you tweak gamma/contrast, but **saturation** is tricki
   - Color profiles (ICC) or HDR LUTs if you want to go deeper
 
 ---
+
+
+## Setting up WM
+
+> This section is tied to my personal preferences for my machine.
+
+basic explaination: 
+
+```sh
+workspace 1: Steam Big Picture
+workspace 2: Discord
+workspace 3: Firefox
+```
+
+Since I'm using HyDE dotfiles, I'm gonna edit this file:
+
+```sh
+sudo nano ~/.config/hypr/userprefs.conf
+
+
+# -----------------------------------------------------
+# AUTORUN APPLICATIONS AND ASSIGN TO WORKSPACES AT BOOT
+# -----------------------------------------------------
+
+# Workspace 1: Steam Big Picture Mode
+
+exec-once = [workspace 1 silent] steam -bigpicture
+windowrule = fullscreen, class:^Steam$ # Ensure Steam Big Picture is fullscreen
+windowrulev2 = workspace 1, class:^(steam_app_.*)$
+
+
+windowrulev2 = workspace 2 silent, class:^(discord)$
+exec-once = sh -c 'sleep 5 && discord'
+
+exec-once = [workspace 3 silent] firefox
+```
+
+> The core idea is to make the gaming library all inside Steam. If it is needed to run something through Bottles, Lutris, etc. I´d make add a non-Steam game into Steam's library and target it with the needed cli.
+
+
+

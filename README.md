@@ -3,6 +3,13 @@
 Welcome to my personal configuration and survival guide for setting up Hyprland and gaming-related tweaks on Arch-based systems (EndeavourOS).  
 This README includes tips, scripts, and setup instructions that I've collected to help me rebuild my setup quickly whenever needed.
 
+```sh
+EndeavourOS (Hyprland; HyDE dotfiles) 
+32GB RAM
+3060 Ti
+i5-13600K
+```
+
 ---
 
 ## 📚 Table of Contents

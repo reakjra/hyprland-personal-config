@@ -19,14 +19,14 @@ i5-13600K
 - [⌨️ US INTL. Layout](#us-intl-layout)
 - [📦 Mounting NTFS Drives](#mounting-ntfs-drives)
 - [🖥️ GRUB Resolution Fix](#grub-resolution-fix)
-- [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-config/blob/main/gpu/readme.md)
+- [❄️ Undervolting NVIDIA](https://github.com/reakjra/hyprland-personal-config/blob/main/gpu/readme.md)
 - [🕛 Date & Time Fix for Dual Boot](#date--time-fix-for-dual-boot)
 - [🗣️ Discord Update & White Screen Fix](#discord-update--white-screen-fix)
 - [🎮 lib32* games fixes](#lib32-fixes)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
-- [🎮 Gaming Related](https://github.com/reakjra/hyprland-config/blob/main/gaming/readme.md)
+- [🎮 Gaming Related](https://github.com/reakjra/hyprland-personal-config/blob/main/gaming/readme.md)
 - [🌸 Setting up WM](#setting-up-wm)
-- [🌸 Scripts](https://github.com/reakjra/hyprland-config/blob/main/scripts/)
+- [🌸 Scripts](https://github.com/reakjra/hyprland-personal-config/blob/main/scripts/)
 
 ---
 

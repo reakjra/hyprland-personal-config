@@ -11,3 +11,5 @@ sudo chmod +x reakjra.conf.sh
 
 reakjra.conf.sh
 ```
+
+![Kitty!](../assets/250702_20h39m12s_screenshot.png)

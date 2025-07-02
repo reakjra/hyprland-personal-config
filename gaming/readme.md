@@ -40,16 +40,20 @@ sudo pacman -S bottles steam
 
 > Essentially the same. However, you need to use `bottles-cli` to run the game. 
 
-1. Add a random app to the Steam's library, doesn´t matter what, since after that, you're gonna erase the `target` and `start in` fields. 
-2. This is the standard command to run an application through bottles-cli:
+1. Add a random app to the Steam's library, doesn´t matter what, since after that, you're gonna erase the `target` and `start in` fields.
+   
+   
+3. This is the standard command to run an application through bottles-cli:
    ```sh
    bottles-cli run -b "<bottle_name>" -e "<directory>"
    ```
-3. We're gonna take as example Zenless Zone Zero. Mind I've downloaded it in: `/home/<username>/nvme1n1p6/ZenlessZoneZero Game/`
-   > NOTE: Keep in mind that bottles need to reach Z: in this case, since the game is not in the Bottle virtual C: drive. I don´t know if with flatpak version works easily as that.
+   
+   
+4. We're gonna take as example Zenless Zone Zero. Mind I've downloaded it in: `/home/<username>/nvme1n1p6/ZenlessZoneZero Game/`
+   > NOTE: Keep in mind that bottles needs to reach the `Z:` drive in this case, since the game is not in the Bottle virtual `C:` drive. I don´t know if with flatpak version works easily as that.
    Addressing where our .exe game is, we change the Steam's application `target` to:
    ```sh
-   bottles-cli run -b "ge-proton10-7" -e "Z:\\home\\reakjra\\nvme1n1p6\\ZenlessZoneZero Game\\ZenlessZoneZero.exe"  
+   bottles-cli run -b "ge-proton10-8" -e "Z:\\home\\reakjra\\nvme1n1p6\\ZenlessZoneZero Game\\ZenlessZoneZero.exe"  
    ```
    > NOTE: We're not going to force compatibility since Bottles will handle everything.
 

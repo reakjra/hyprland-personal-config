@@ -10,6 +10,8 @@ EndeavourOS
 i5-13600K
 ```
 
+> Mind I'm not an expert and neither experienced in any form of Linux. This repository is made primarily for myself. You might find several typos, grammatical errors and flawed english
+
 ---
 
 ## 📚 Table of Contents

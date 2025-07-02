@@ -25,11 +25,12 @@ main_menu() {
     echo "5. 🎮 Install Steam, Bottles and GE-Proton"
     echo "6. 🎮 Install MangoHud and vkBasalt with configs"
     echo "7. 🎮 Install lib32* Multimedia"
-    echo "8. 🌸 WM Personal Settings"
-    echo "9. ❌ Exit"
+    echo "8. 🥚 Nvidia Configuration"
+    echo "9. 🌸 WM Personal Settings"
+    echo "10. ❌ Exit"
     echo ""
 
-    read -p "👉 Select an option (1-9): " choice
+    read -p "👉 Select an option (1-10): " choice
     case $choice in
         1) mount_drives_section ;;
         2) fix_dualboot_time ;;
@@ -38,8 +39,9 @@ main_menu() {
         5) install_gaming_section ;;
         6) install_gaming_monitoring_tools ;;
         7) install_lib32_multimedia ;;
-        8) wm_settings_menu ;;
-        9) echo "👋 Goodbye!"; exit 0 ;;
+        8) nvidia_menu ;;
+        9) wm_settings_menu ;;
+        10) echo "👋 Goodbye!"; exit 0 ;;
         *) echo "❌ Invalid choice."; pause ;;
     esac
 }
@@ -461,6 +463,205 @@ EOF
     fi
 
     pause
+}
+
+
+
+
+
+
+# NVIDIA RELATED 
+
+nvidia_menu() {
+    while true; do
+        clear
+        echo ""
+        echo -e "🌸${RED} Nvidia Personal Configuration 🌸 ${RESET} "
+        echo ""
+        echo "1. 🌹 Power Limit & Fan Curve"
+        echo "2. 👈 Back to main menu"
+        echo ""
+        read -p "Choose an option: " choice
+
+        case "$choice" in
+            1) nvidia_fan_setup ;;
+            2) break ;;
+            *) echo "❌ Invalid option." ;;
+        esac
+    done
+}
+
+
+nvidia_fan_setup() {
+    clear
+    echo -e "\n🌸 ${RED} NVIDIA GPU Fan Curve & Power Limit Setup 🌸 ${RESET}\n"
+    echo ""
+    echo "This setup will allow you to apply a custom fan curve and undervolt your NVIDIA GPU."
+    echo ""
+    echo -e "⚠️ These settings are tuned for a 2-fan GPU (e.g., 3060 Ti). Adjust only if you know what you're doing. Mind the Power Limit is set to 130w. Change it in ${CYAN}reakjra.conf.sh${RESET} if you need to.`"
+    echo
+
+    # Step 1: Install Required Packages
+    echo "🌸 Step 1: Install required NVIDIA packages (nvidia, nvidia-utils, etc.)"
+    read -rp "Install packages? [Y/n]: " install_packages
+    if [[ "$install_packages" =~ ^[Yy]$ || -z "$install_packages" ]]; then
+        sudo pacman -S --needed nvidia nvidia-utils lib32-nvidia-utils nvidia-smi nvidia-settings xorg-xhost
+    else
+        echo ""
+        echo "⚠️ Skipping package installation may cause the setup to fail."
+    fi
+
+    # Step 2: Configure sudoers for passwordless access
+    echo -e "\n🌸 step 2: Configure passwordless sudo for GPU tools (nvidia-smi, nvidia-settings)"
+    read -rp "Configure sudoers? [Y/n]: " configure_sudoers
+    if [[ "$configure_sudoers" =~ ^[Yy]$ || -z "$configure_sudoers" ]]; then
+        sudo tee /etc/sudoers.d/gpucontrol >/dev/null <<EOF
+$USER ALL=(ALL) NOPASSWD: /usr/bin/nvidia-settings
+$USER ALL=(ALL) NOPASSWD: /usr/bin/nvidia-smi
+$USER ALL=(ALL) NOPASSWD: /usr/bin/env
+EOF
+    else
+        echo "⚠️ Skipping sudoers setup may prevent scripts from working correctly."
+    fi
+
+    # Step 3: Enable CoolBits for manual fan control
+    echo -e "\n🌸 Step 3: Enable CoolBits (required for fan control)"
+    read -rp "Enable CoolBits? [Y/n]: " enable_coolbits
+    if [[ "$enable_coolbits" =~ ^[Yy]$ || -z "$enable_coolbits" ]]; then
+        sudo mkdir -p /etc/X11/xorg.conf.d/
+        sudo tee /etc/X11/xorg.conf.d/20-nvidia.conf >/dev/null <<EOF
+Section "Device"
+    Identifier "Nvidia Card"
+    Driver "nvidia"
+    Option "Coolbits" "31"
+EndSection
+EOF
+        echo "✅ CoolBits set to 31. You do NOT need to reboot."
+    else
+        echo "⚠️ Skipping CoolBits setup will break fan control."
+    fi
+
+    # Step 4: Create undervolt script (power limit)
+    echo -e "\n🌸 Step 4: Create undervolt script (gpu-limit.sh)"
+    read -rp "Create gpu-limit.sh? [Y/n]: " create_gpu_limit
+    if [[ "$create_gpu_limit" =~ ^[Yy]$ || -z "$create_gpu_limit" ]]; then
+        cat > ~/gpu-limit.sh <<EOF
+#!/bin/bash
+sudo nvidia-smi -pl 150
+EOF
+        sudo chmod +x ~/gpu-limit.sh
+        echo "✅ gpu-limit.sh created and made executable."
+    fi
+
+    # Step 5: Create fan curve control script
+    echo -e "\n🌸 Step 5: Create fan curve script (nvidia_fan_control.sh)"
+    read -rp "Create fan control script? [Y/n]: " create_fan_script
+    if [[ "$create_fan_script" =~ ^[Yy]$ || -z "$create_fan_script" ]]; then
+        cat > ~/nvidia_fan_control.sh <<'EOF'
+#!/bin/bash
+
+LOG_FILE="/tmp/nvidia_fan_control.log"
+> "$LOG_FILE"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+FAN_CURVE=(
+    "40:30"
+    "50:40"
+    "60:50"
+    "70:65"
+    "75:70"
+    "80:75"
+    "90:100"
+)
+INTERVAL_SECONDS=5
+
+run_nvidia_settings() {
+    export DISPLAY="${DISPLAY:-:0}"
+    export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    sudo env DISPLAY="$DISPLAY" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" nvidia-settings "$@"
+}
+
+get_gpu_temp() {
+    nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader
+}
+
+set_fan_speed() {
+    local speed_percent=$1
+    local fans_to_control=("0" "1")
+    for fan_id in "${fans_to_control[@]}"; do
+        run_nvidia_settings -a "[fan:${fan_id}]/GPUTargetFanSpeed=${speed_percent}"
+    done
+}
+
+echo "Enabling manual fan control..."
+run_nvidia_settings -a "[gpu:0]/GPUFanControlState=1"
+
+while true; do
+    GPU_TEMP=$(get_gpu_temp)
+    TARGET_SPEED=30
+    for entry in "${FAN_CURVE[@]}"; do
+        temp_threshold=$(echo "$entry" | cut -d':' -f1)
+        speed_value=$(echo "$entry" | cut -d':' -f2)
+        if (( GPU_TEMP >= temp_threshold )); then
+            TARGET_SPEED=$speed_value
+        fi
+    done
+    echo "GPU Temp: ${GPU_TEMP}°C, Fan Speed: ${TARGET_SPEED}%"
+    set_fan_speed "$TARGET_SPEED"
+    sleep "$INTERVAL_SECONDS"
+done
+EOF
+        sudo chmod +x ~/nvidia_fan_control.sh
+        echo "✅ nvidia_fan_control.sh created and made executable."
+        echo ""
+    fi
+
+    # Step 6: Add xhost line for root display access
+    echo -e "\n🌸 Step 6: Allow root user access to X11 (needed for nvidia-settings)"
+    read -rp "Run xhost setup now? [Y/n]: " xhost_confirm
+    if [[ "$xhost_confirm" =~ ^[Yy]$ || -z "$xhost_confirm" ]]; then
+        xhost +si:localuser:root
+        echo "✅ Root access to display granted (xhost)."
+    else
+        echo ""
+        echo "⚠️ Without xhost, fan control script will likely fail under sudo."
+        echo ""
+    fi
+
+    echo -e "\n✅ Setup complete!"
+    echo ""
+    echo -e "\n🌸 Step 7: Autostart configuration for Hyprland"
+    read -rp "Do you want to automatically start the fan and power limit scripts on boot? [Y/n]: " autostart_confirm
+    if [[ "$autostart_confirm" =~ ^[Yy]$ || -z "$autostart_confirm" ]]; then
+        AUTOSTART_LINE1='exec = ~/gpu-limit.sh'
+        AUTOSTART_LINE2='exec-once = bash -c "sleep 1 && xhost +si:localuser:root && sleep 2 && ~/nvidia_fan_control.sh &"'
+
+        if [[ -f "$HOME/.config/hypr/userprefs.conf" ]]; then
+            echo -e "\n✅ Detected HyDE userprefs.conf"
+            echo -e "\n# NVIDIA GPU Scripts" >> "$HOME/.config/hypr/userprefs.conf"
+            echo "$AUTOSTART_LINE1" >> "$HOME/.config/hypr/userprefs.conf"
+            echo "$AUTOSTART_LINE2" >> "$HOME/.config/hypr/userprefs.conf"
+            echo "✅ Added to ~/.config/hypr/userprefs.conf"
+        elif [[ -f "$HOME/.config/hypr/hyprland.conf" ]]; then
+            echo -e "\nℹ️ userprefs.conf not found. Falling back to hyprland.conf."
+            echo -e "\n# NVIDIA GPU Scripts" >> "$HOME/.config/hypr/hyprland.conf"
+            echo "$AUTOSTART_LINE1" >> "$HOME/.config/hypr/hyprland.conf"
+            echo "$AUTOSTART_LINE2" >> "$HOME/.config/hypr/hyprland.conf"
+            echo "✅ Added to ~/.config/hypr/hyprland.conf"
+        else
+            echo -e "\n❌ Could not find any Hyprland configuration file."
+            echo "Please add the following lines manually to your config:"
+            echo "$AUTOSTART_LINE1"
+            echo "$AUTOSTART_LINE2"
+        fi
+    else
+        echo "⚠️ Skipping autostart. You'll need to launch the scripts manually."
+    fi
+
+   
+    echo ""
+    echo ""
+    read -rp "🌸 Press Enter to return to the NVIDIA menu..."
 }
 
  

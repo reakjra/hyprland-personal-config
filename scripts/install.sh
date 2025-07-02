@@ -20,22 +20,26 @@ main_menu() {
     echo ""
     echo "1. 📁 Mount partitions (NTFS)"
     echo "2. 🕒 Fix dual boot time issue" 
-    echo "3. 🗣️ Install Discord with fix"
-    echo "4. 🎮 Install Steam, Bottles and GE-Proton"
-    echo "5. 📊 Install MangoHud and vkBasalt with configs"
-    echo "6. 🌸 WM Personal Settings"
-    echo "7. ❌ Exit"
+    echo "3. 🗣  Install Discord with fix"
+    echo "4. 🎵 Spotify & Spicetify Patch"
+    echo "5. 🎮 Install Steam, Bottles and GE-Proton"
+    echo "6. 🎮 Install MangoHud and vkBasalt with configs"
+    echo "7. 🎮 Install lib32* Multimedia"
+    echo "8. 🌸 WM Personal Settings"
+    echo "9. ❌ Exit"
     echo ""
 
-    read -p "👉 Select an option (1-8): " choice
+    read -p "👉 Select an option (1-9): " choice
     case $choice in
         1) mount_drives_section ;;
         2) fix_dualboot_time ;;
         3) install_discord_with_fix ;;
-        4) install_gaming_section ;;
-        5) install_gaming_monitoring_tools ;;
-        6) wm_settings_menu ;;
-        7) echo "👋 Goodbye!"; exit 0 ;;
+        4) install_spotify_spicetify ;;
+        5) install_gaming_section ;;
+        6) install_gaming_monitoring_tools ;;
+        7) install_lib32_multimedia ;;
+        8) wm_settings_menu ;;
+        9) echo "👋 Goodbye!"; exit 0 ;;
         *) echo "❌ Invalid choice."; pause ;;
     esac
 }
@@ -340,6 +344,32 @@ EOF
 }
 
 
+# 🌸 SPOTIFY & SPICETIFY
+install_spotify_spicetify() {
+    echo ""
+    echo "🎵 This will install Spotify and patch it using Spicetify CLI + Marketplace."
+    read -p "Continue? (y/n): " confirm
+    [[ "$confirm" != "y" ]] && return
+
+    echo "📦 Installing Spotify and Spicetify CLI..."
+    sudo pacman -S spotify --noconfirm
+    yay -S spicetify-cli --noconfirm   
+
+    echo "🔧 Applying permissions to /opt/spotify..."
+    sudo chmod a+wr /opt/spotify
+    sudo chmod a+wr /opt/spotify/Apps -R
+
+    echo "🌐 Installing Spicetify Marketplace..."
+    curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh
+
+    echo "🛠️ Running spicetify backup + apply..."
+    spicetify backup apply
+
+    echo "✅ Spotify and Spicetify successfully installed and patched!"
+    pause
+}
+
+
 # 🌸 WM SETTINGS MENU
 wm_settings_menu() {
     while true; do
@@ -360,6 +390,25 @@ wm_settings_menu() {
         esac
     done
 }
+
+
+# 🌸 LIB32 MULTIMEDIA
+install_lib32_multimedia() {
+    echo ""
+    echo "🎮 This will install essential lib32 multimedia libraries for better audio/video support in some games."
+    echo "⚠️  This is especially useful for games like Resident Evil 2 Remake and Days Gone Remastered."
+    echo "⏳ The installation can take a while (~30 minutes depending on your system and internet speed)."
+    read -p "Do you want to continue? (y/n): " confirm
+    [[ "$confirm" != "y" ]] && return
+
+    yay -S lib32-gstreamer lib32-gst-plugins-base lib32-gst-plugins-good lib32-gst-plugins-bad lib32-gst-plugins-ugly \
+           lib32-libva lib32-libx264 lib32-libvpx lib32-libmpeg2 lib32-openal \
+           lib32-libpulse lib32-ffmpeg lib32-vulkan-icd-loader --noconfirm
+
+    echo "✅ All lib32 multimedia libraries have been installed."
+    pause
+} 
+
 
  
 # 🌸 WM SETTINGS: USERPREFS
@@ -419,4 +468,3 @@ EOF
 while true; do
     main_menu
 done
-

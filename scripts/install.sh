@@ -16,24 +16,26 @@ pause() {
 # ✨ MAIN MENU
 main_menu() {
     clear
-    echo -e "${CYAN}🌸 Welcome to Reakjra's personal installation script! 🌸${RESET}"
+    echo -e "${RED}🌸 Welcome to Reakjra's personal EndeavourOS configuration script! 🌸${RESET}"
     echo ""
     echo "1. 📁 Mount partitions (NTFS)"
     echo "2. 🕒 Fix dual boot time issue" 
     echo "3. 🗣️ Install Discord with fix"
     echo "4. 🎮 Install Steam, Bottles and GE-Proton"
     echo "5. 📊 Install MangoHud and vkBasalt with configs"
-    echo "6. ❌ Exit"
+    echo "6. 🌸 WM Personal Settings"
+    echo "7. ❌ Exit"
     echo ""
 
-    read -p "👉 Select an option (1-6): " choice
+    read -p "👉 Select an option (1-8): " choice
     case $choice in
         1) mount_drives_section ;;
         2) fix_dualboot_time ;;
         3) install_discord_with_fix ;;
         4) install_gaming_section ;;
         5) install_gaming_monitoring_tools ;;
-        6) echo "👋 Goodbye!"; exit 0 ;;
+        6) wm_settings_menu ;;
+        7) echo "👋 Goodbye!"; exit 0 ;;
         *) echo "❌ Invalid choice."; pause ;;
     esac
 }
@@ -48,7 +50,10 @@ mount_drives_section() {
     mapfile -t PARTS < <(lsblk -P -o NAME,SIZE,UUID,FSTYPE,MOUNTPOINT,TYPE)
 
     echo ""
-    echo "🔢 Available partitions:"
+    clear
+    echo -e "🌸${RED} Mounting Drives 🌸 ${RESET}"
+    echo ""
+    echo "📁 Available partitions:"
     INDEXED_PARTS=()
     index=1
 
@@ -334,8 +339,84 @@ EOF
     pause
 }
 
+
+# 🌸 WM SETTINGS MENU
+wm_settings_menu() {
+    while true; do
+        clear
+        echo ""
+        echo -e "🌸${RED} WM Personal Settings (HyDE only) 🌸 ${RESET} "
+        echo ""
+        echo "1. 🍼 Update userprefs.conf (startup applications and keyboard layout)"
+        echo ""
+        echo "2. 🔙 Back to main menu"
+        echo ""
+        read -p "Choose an option: " choice
+
+        case "$choice" in
+            1) update_userprefs ;;
+            2) break ;;
+            *) echo "❌ Invalid option." ;;
+        esac
+    done
+}
+
+ 
+# 🌸 WM SETTINGS: USERPREFS
+update_userprefs() {
+    echo ""
+    echo "⚠️  These settings are personal and intended ONLY for HyDE (Hyprland dotfiles)."
+    echo "📁 Target file: ~/.config/hypr/userprefs.conf"
+    echo ""
+    read -p "Do you want to continue? (y/n): " confirm
+    [[ "$confirm" != "y" ]] && return
+
+    prefs_file="$HOME/.config/hypr/userprefs.conf"
+
+    # Check se il file esiste
+    if [[ ! -f "$prefs_file" ]]; then
+        echo "❌ userprefs.conf not found. Are you using HyDE dotfiles?"
+        pause
+        return
+    fi
+
+    # Blocchi da aggiungere
+    block_to_add=$(cat << 'EOF'
+# -----------------------------------------------------
+# AUTORUN APPLICATIONS AND ASSIGN TO WORKSPACES AT BOOT
+# -----------------------------------------------------
+
+# Workspace 1: Steam Big Picture Mode
+
+exec-once = [workspace 1 silent] steam -bigpicture
+windowrule = fullscreen, class:^Steam$ # Ensure Steam Big Picture is fullscreen
+windowrulev2 = workspace 1, class:^(steam_app_.*)$
+
+windowrulev2 = workspace 2 silent, class:^(discord)$
+exec-once = sh -c 'sleep 5 && discord'
+
+exec-once = [workspace 3 silent] firefox
+EOF
+)
+
+    # Check se una parte del blocco è già presente
+    if grep -q "exec-once = \[workspace 1 silent\] steam -bigpicture" "$prefs_file"; then
+        echo "✅ These autostart entries are already present."
+        echo "📝 Adding a small marker comment to indicate check success."
+
+        echo -e "\n# ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧" >> "$prefs_file"
+    else
+        echo "✏️ Appending autostart workspace assignments to userprefs.conf..."
+        echo -e "\n$block_to_add\n# ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧" >> "$prefs_file"
+        echo "✅ Added new entries."
+    fi
+
+    pause
+}
+
  
 # 🔁 MAIN MENU LOOP
 while true; do
     main_menu
 done
+

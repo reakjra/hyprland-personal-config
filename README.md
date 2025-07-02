@@ -22,6 +22,7 @@ i5-13600K
 - [🗣️ Discord Update & White Screen Fix](#discord-update--white-screen-fix)
 - [🎮 lib32* games fixes](#lib32-fixes)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
+- [🎮 Gaming Related](https://github.com/reakjra/hyprland-config/blob/main/gaming/readme.md)
 - [🌸 Setting up WM](#setting-up-wm)
 
 ---

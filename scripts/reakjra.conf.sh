@@ -5,6 +5,7 @@ GREEN="\e[32m"
 RED="\e[31m"
 CYAN="\e[36m"
 YELLOW="\e[33m"
+PINK="\e[38;5;200m"
 RESET="\e[0m"
 
 pause() {
@@ -371,34 +372,11 @@ install_spotify_spicetify() {
     pause
 }
 
-
-# 🌸 WM SETTINGS MENU
-wm_settings_menu() {
-    while true; do
-        clear
-        echo ""
-        echo -e "🌸${RED} WM Personal Settings (HyDE only) 🌸 ${RESET} "
-        echo ""
-        echo "1. 🍼 Update userprefs.conf (startup applications and keyboard layout)"
-        echo ""
-        echo "2. 🔙 Back to main menu"
-        echo ""
-        read -p "Choose an option: " choice
-
-        case "$choice" in
-            1) update_userprefs ;;
-            2) break ;;
-            *) echo "❌ Invalid option." ;;
-        esac
-    done
-}
-
-
 # 🌸 LIB32 MULTIMEDIA
 install_lib32_multimedia() {
     echo ""
     echo "🎮 This will install essential lib32 multimedia libraries for better audio/video support in some games."
-    echo "⚠️  This is especially useful for games like Resident Evil 2 Remake and Days Gone Remastered."
+    echo "⚠️ This is especially useful for games like Resident Evil 2 Remake and Days Gone Remastered."
     echo "⏳ The installation can take a while (~30 minutes depending on your system and internet speed)."
     read -p "Do you want to continue? (y/n): " confirm
     [[ "$confirm" != "y" ]] && return
@@ -412,11 +390,31 @@ install_lib32_multimedia() {
 } 
 
 
- 
+
+# 🌸 WM SETTINGS MENU
+wm_settings_menu() {
+    while true; do
+        clear
+        echo ""
+        echo -e "🌸${RED} WM Personal Settings (HyDE only) 🌸 ${RESET} "
+        echo ""
+        echo "1. 🍼 Update userprefs.conf (startup applications and keyboard layout)"
+        echo "2. 👈 Back to main menu"
+        echo ""
+        read -p "Choose an option: " choice
+
+        case "$choice" in
+            1) update_userprefs ;;
+            2) break ;;
+            *) echo "❌ Invalid option." ;;
+        esac
+    done
+}
+
 # 🌸 WM SETTINGS: USERPREFS
 update_userprefs() {
     echo ""
-    echo "⚠️  These settings are personal and intended ONLY for HyDE (Hyprland dotfiles)."
+    echo "⚠️ These settings are personal and intended ONLY for ${PINK}HyDE${RESET} (Hyprland dotfiles)."
     echo "📁 Target file: ~/.config/hypr/userprefs.conf"
     echo ""
     read -p "Do you want to continue? (y/n): " confirm
@@ -464,9 +462,6 @@ EOF
 
     pause
 }
-
-
-
 
 
 

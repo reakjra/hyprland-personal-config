@@ -25,6 +25,9 @@ i5-13600K
 - [🎮 Gaming Related](https://github.com/reakjra/hyprland-config/blob/main/gaming/readme.md)
 - [🌸 Setting up WM](#setting-up-wm)
 
+
+- [🌸 Scripts](https://github.com/reakjra/hyprland-config/blob/main/scripts/)
+
 ---
 
 ## US INTL. Layout

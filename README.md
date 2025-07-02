@@ -1,10 +1,10 @@
-# 🛠️ Hyprland Config - My Personal Linux Setup
+# 🛠️ Hyprland (HyDE) Config - My Personal Linux Setup
 
-Welcome to my personal configuration and survival guide for setting up Hyprland and gaming-related tweaks on Arch-based systems (EndeavourOS).  
+Welcome to my personal configuration and survival guide for setting up Hyprland (HyDE) and gaming-related tweaks on Arch-based systems (EndeavourOS).  
 This README includes tips, scripts, and setup instructions that I've collected to help me rebuild my setup quickly whenever needed.
 
 ```sh
-EndeavourOS (Hyprland; HyDE dotfiles) 
+EndeavourOS 
 32GB RAM
 3060 Ti
 i5-13600K
@@ -112,8 +112,6 @@ GRUB_GFXPAYLOAD_LINUX=keep
 ```bash
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
-
- Tip: If using a distro with different paths (like Fedora or Btrfs), double-check your `/boot` structure.
 
 4. Reboot and enjoy crispy-clear boot text!
 

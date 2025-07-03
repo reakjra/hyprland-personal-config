@@ -12,4 +12,4 @@ chmod +x reakjra.conf.sh
 reakjra.conf.sh
 ```
 
-![Kitty!](../assets/250702_20h39m12s_screenshot.png)
+![image](https://github.com/user-attachments/assets/ea7049bd-32c0-480e-b58a-361d7a1aaecc)

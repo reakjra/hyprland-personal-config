@@ -7,7 +7,7 @@
 ```sh
 curl -o reakjra.conf.sh https://raw.githubusercontent.com/reakjra/hyprland-personal-config/main/scripts/reakjra.conf.sh
 
-sudo chmod +x reakjra.conf.sh
+chmod +x reakjra.conf.sh
 
 reakjra.conf.sh
 ```

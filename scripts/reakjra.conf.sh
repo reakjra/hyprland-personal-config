@@ -27,7 +27,7 @@ main_menu() {
     echo "6. 🎮 Install MangoHud and vkBasalt with configs"
     echo "7. 🎮 Install lib32* Multimedia"
     echo "8. 🥚 Nvidia Configuration"
-    echo "9. 🌸 WM Personal Settings"
+    echo "9. 🌸 HyDE/Hypr Personal Settings"
     echo "10. ❌ Exit"
     echo ""
 
@@ -398,14 +398,18 @@ wm_settings_menu() {
         echo ""
         echo -e "🌸${RED} WM Personal Settings (HyDE only) 🌸 ${RESET} "
         echo ""
-        echo "1. 🍼 Update userprefs.conf (startup applications and keyboard layout)"
-        echo "2. 👈 Back to main menu"
+        echo "1. 🍼 Update userprefs.conf (it will override the current one)"
+        echo "2. 🍼 Update windowrules.conf (it will override the current one)"
+        echo "3. 🍼 Apply wallbash theme to Visual Studio Code"
+        echo "4. 👈 Back to main menu"
         echo ""
         read -p "Choose an option: " choice
 
         case "$choice" in
             1) update_userprefs ;;
-            2) break ;;
+            2) update_windowsrules ;;
+            3) apply_wallbash_code_theme ;;
+            4) break ;;
             *) echo "❌ Invalid option." ;;
         esac
     done
@@ -413,55 +417,119 @@ wm_settings_menu() {
 
 # 🌸 WM SETTINGS: USERPREFS
 update_userprefs() {
-    echo ""
-    echo "⚠️ These settings are personal and intended ONLY for HyDE$ (Hyprland dotfiles)."
-    echo "📁 Target file: ~/.config/hypr/userprefs.conf"
-    echo ""
-    read -p "Do you want to continue? (y/n): " confirm
-    [[ "$confirm" != "y" ]] && return
+      echo -e "\n🌸 Updating userprefs.conf from remote GitHub repository..."
 
-    prefs_file="$HOME/.config/hypr/userprefs.conf"
+    TARGET="$HOME/.config/hypr/userprefs.conf"
 
-    # Check se il file esiste
-    if [[ ! -f "$prefs_file" ]]; then
-        echo "❌ userprefs.conf not found. Are you using HyDE dotfiles?"
-        pause
+    # Step 1: Check if file exists (HyDE check)
+    if [[ ! -f "$TARGET" ]]; then
+        echo "❌ userprefs.conf not found. You are likely not using HyDE."
+        echo "Skipping this step."
         return
     fi
 
-    # Blocchi da aggiungere
-    block_to_add=$(cat << 'EOF'
-# -----------------------------------------------------
-# AUTORUN APPLICATIONS AND ASSIGN TO WORKSPACES AT BOOT
-# -----------------------------------------------------
-
-# Workspace 1: Steam Big Picture Mode
-
-exec-once = [workspace 1 silent] steam -bigpicture
-windowrule = fullscreen, class:^Steam$ # Ensure Steam Big Picture is fullscreen
-windowrulev2 = workspace 1, class:^(steam_app_.*)$
-
-windowrulev2 = workspace 2 silent, class:^(discord)$
-exec-once = sh -c 'sleep 5 && discord'
-
-exec-once = [workspace 3 silent] firefox
-EOF
-)
-
-    # Check se una parte del blocco è già presente
-    if grep -q "exec-once = \[workspace 1 silent\] steam -bigpicture" "$prefs_file"; then
-        echo "✅ These autostart entries are already present."
-        echo "📝 Adding a small marker comment to indicate check success."
-
-        echo -e "\n# ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧" >> "$prefs_file"
-    else
-        echo "✏️ Appending autostart workspace assignments to userprefs.conf..."
-        echo -e "\n$block_to_add\n# ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧" >> "$prefs_file"
-        echo "✅ Added new entries."
+    echo "✅ userprefs.conf found. You are using HyDE."
+    
+    # Step 2: Ask for confirmation
+    read -rp "Do you want to replace your current userprefs.conf with the one from GitHub? [Y/n]: " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ && -n "$confirm" ]]; then
+        echo "❌ Aborted. Your current config was not changed."
+        return
     fi
 
-    pause
+    # Step 3: Backup existing config
+    TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+    BACKUP="${TARGET}.bak-${TIMESTAMP}"
+    cp "$TARGET" "$BACKUP"
+    echo "🗄️ Backup created at: $BACKUP"
+
+    # Step 4: Download from GitHub
+    GITHUB_URL="https://raw.githubusercontent.com/reakjra/hyprland-personal-config/refs/heads/main/scripts/HyDE/userprefs.conf"
+    echo "⬇️ Downloading new config from GitHub..."
+
+    if curl -fsSL "$GITHUB_URL" -o "$TARGET"; then
+        echo "✅ userprefs.conf successfully updated!"
+    else
+        echo "❌ Failed to download the file. Reverting to your previous config."
+        cp "$BACKUP" "$TARGET"
+        echo "🔁 Reverted to: $BACKUP"
+    fi
 }
+
+# 🌸  UPDATE WINDOWRULES.CONF
+update_windowsrules() {
+ echo -e "\n🌸 Updating windowrules.conf from remote GitHub repository..."
+
+    TARGET="$HOME/.config/hypr/windowrules.conf"
+
+    # Step 1: Check if file exists (HyDE check)
+    if [[ ! -f "$TARGET" ]]; then
+        echo "❌ windowrules.conf not found. You are likely not using HyDE."
+        echo "Skipping this step."
+        return
+    fi
+
+    echo "✅ windowrules.conf found. You are using HyDE."
+
+    # Step 2: Ask for confirmation
+    read -rp "Do you want to replace your current windowrules.conf with the one from GitHub? [Y/n]: " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ && -n "$confirm" ]]; then
+        echo "❌ Aborted. Your current windowrules.conf was not changed."
+        return
+    fi
+
+    # Step 3: Backup existing config
+    TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+    BACKUP="${TARGET}.bak-${TIMESTAMP}"
+    cp "$TARGET" "$BACKUP"
+    echo "🗄️ Backup created at: $BACKUP"
+
+    # Step 4: Download from GitHub
+    GITHUB_URL="https://raw.githubusercontent.com/reakjra/hyprland-personal-config/refs/heads/main/scripts/HyDE/windowrules.conf"
+    echo "⬇️ Downloading new config from GitHub..."
+
+    if curl -fsSL "$GITHUB_URL" -o "$TARGET"; then
+        echo "✅ windowrules.conf successfully updated!"
+    else
+        echo "❌ Failed to download the file. Reverting to your previous config."
+        cp "$BACKUP" "$TARGET"
+        echo "🔁 Reverted to: $BACKUP"
+    fi
+}
+
+# 🌸 APPLY WALLBASH THEME TO VISUAL STUDIO CODE
+apply_wallbash_code_theme() {
+     SCRIPT="$HOME/.config/hyde/wallbash/scripts/code.sh"
+
+    echo -e "\n🌸 Applying Wallbash theme to Visual Studio Code..."
+
+    # Check if the script exists
+    if [[ ! -f "$SCRIPT" ]]; then
+        echo "❌ Wallbash theme script for VS Code not found!"
+        echo "Expected at: $SCRIPT"
+        return
+    fi
+
+    # Confirm
+    read -rp "Are you sure you want to apply the Wallbash theme to VS Code? [Y/n]: " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ && -n "$confirm" ]]; then
+        echo "❌ Cancelled. VS Code theme was not changed."
+        return
+    fi
+
+    # Run the script
+    bash "$SCRIPT"
+
+    # Feedback
+    if [[ $? -eq 0 ]]; then
+        echo "✅ Wallbash theme successfully applied to VS Code!"
+    else
+        echo "⚠️ Something went wrong while applying the theme."
+    fi
+}
+
+
+
 
 
 

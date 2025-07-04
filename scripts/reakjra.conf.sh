@@ -185,7 +185,7 @@ fix_dualboot_time() {
 # 🌸  INSTALL MANGOHUD & VKBASALT WITH CUSTOM CONFIGS
 install_gaming_monitoring_tools() {
     echo ""
-    read -p "📊 Do you want to install MangoHud and vkBasalt with default configs? (y/n): " confirm
+    read -p "📊 Do you want to install MangoHud and vkBasalt with custom configs? (y/n): " confirm
     [[ "$confirm" != "y" ]] && return
 
     # Install MangoHud
@@ -204,14 +204,58 @@ install_gaming_monitoring_tools() {
         sudo pacman -S --noconfirm vkbasalt
     fi
 
-    # MangoHud config
+    # Ask for MangoHud config type
     mkdir -p ~/.config/MangoHud
     mango_conf=~/.config/MangoHud/MangoHud.conf
+
     if [[ -f "$mango_conf" ]]; then
         echo "⚠️  MangoHud config already exists, skipping creation."
     else
-        echo "📝 Creating MangoHud config..."
-        cat << EOF > "$mango_conf"
+        echo ""
+        echo "🛠️  Choose MangoHud config type:"
+        echo "1) Minimal"
+        echo "2) Full"
+        read -p "Enter your choice (1/2): " config_choice
+
+        if [[ "$config_choice" == "1" ]]; then
+            echo "📝 Creating Minimal MangoHud config..."
+            cat << EOF > "$mango_conf"
+# Appearance
+engine_version=0
+position=top-center
+font_size=15
+horizontal
+background_alpha=0.0
+text_color=FFFFFF
+alpha=1
+engine_color=FFFFFF
+
+# Enabled Metrics
+fps=1
+gpu_stats=1
+gpu_temp=1
+
+# Custom Layout
+text_layout=top-center
+text=\$fps | \$gpu_temp
+
+gpu_list=0
+
+# Performance Metrics (disabled by default)
+frametime=0
+frame_timing=0
+time=0
+ram=0
+vram=0
+cpu_stats=0
+cpu_temp=0
+gpu_core_clock=0
+gpu_mem_clock=0
+gpu_power=0
+EOF
+        else
+            echo "📝 Creating Full MangoHud config..."
+            cat << EOF > "$mango_conf"
 # General Display Settings
 position=top-left
 font_size=24
@@ -248,6 +292,7 @@ FPS: \${fps}
 \${frame_timing}
 RAM: \${ram} / VRAM: \${vram}
 EOF
+        fi
         echo "✅ MangoHud config created."
     fi
 
@@ -275,6 +320,7 @@ EOF
     echo -e "${GREEN}🎉 Monitoring tools installed and configured!${RESET}"
     pause
 }
+
 
 # 🌸 Install Discord with fix
 install_discord_with_fix() {

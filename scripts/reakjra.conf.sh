@@ -26,9 +26,10 @@ main_menu() {
     echo "5. 🎮 Install Steam, Bottles and GE-Proton"
     echo "6. 🎮 Install MangoHud and vkBasalt with configs"
     echo "7. 🎮 Install lib32* Multimedia"
-    echo "8. 🥚 Nvidia Configuration"
-    echo "9. 🌸 HyDE/Hypr Personal Settings"
-    echo "10. ❌ Exit"
+    echo "8. 🎮 Install Gamemode and apply"
+    echo "9. 🥚 Nvidia Configuration"
+    echo "10. 🌸 HyDE/Hypr Personal Settings"
+    echo "11. ❌ Exit"
     echo ""
 
     read -p "👉 Select an option (1-10): " choice
@@ -40,9 +41,10 @@ main_menu() {
         5) install_gaming_section ;;
         6) install_gaming_monitoring_tools ;;
         7) install_lib32_multimedia ;;
-        8) nvidia_menu ;;
-        9) wm_settings_menu ;;
-        10) echo "👋 Goodbye!"; exit 0 ;;
+        8) install_gamemode_section ;; 
+        9) nvidia_menu ;;
+        10) wm_settings_menu ;;
+        11) echo "👋 Goodbye!"; exit 0 ;;
         *) echo "❌ Invalid choice."; pause ;;
     esac
 }
@@ -434,6 +436,55 @@ install_lib32_multimedia() {
     echo "✅ All lib32 multimedia libraries have been installed."
     pause
 } 
+
+
+# 🌸 INSTALL GAMEMODE
+install_gamemode_section() {
+    echo ""
+    read -p "🌸 Do you want to install and configure Gamemode? (y/n): " confirm
+    [[ "$confirm" != "y" ]] && return
+
+    # Step 1: Install gamemode
+    if command -v gamemoded &> /dev/null; then
+        echo "✅ Gamemode is already installed."
+    else
+        echo "📦 Installing Gamemode..."
+        sudo pacman -S --noconfirm gamemode lib32-gamemode
+    fi
+
+    # Step 2: Add user to gamemode group
+    if groups $(whoami) | grep -qw "gamemode"; then
+        echo "✅ You are already part of the 'gamemode' group."
+    else
+        echo "👥 Adding current user to 'gamemode' group..."
+        sudo usermod -aG gamemode $(whoami)
+        echo "✅ User added to 'gamemode' group."
+    fi
+
+    # Step 3: Check if gamemoded is running
+    echo "🔍 Checking if gamemoded service is running..."
+    if systemctl --user is-active --quiet gamemoded; then
+        echo "✅ Gamemoded is running under user session."
+    elif systemctl is-active --quiet gamemoded; then
+        echo "✅ Gamemoded is running (system level)."
+    else
+        echo "⚠️ Gamemoded is not currently active."
+        echo "⏳ Trying to start it manually..."
+        systemctl --user start gamemoded 2>/dev/null || sudo systemctl start gamemoded
+
+        if systemctl --user is-active --quiet gamemoded || systemctl is-active --quiet gamemoded; then
+            echo "✅ Gamemoded started successfully!"
+        else
+            echo "⚠️ Could not start gamemoded. Try rebooting or launching it with 'gamemoded -d'."
+        fi
+    fi
+
+    echo ""
+    echo -e "${GREEN}🎉 Gamemode is installed and configured!${RESET}"
+    pause
+}
+
+
 
 
 

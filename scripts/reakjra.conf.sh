@@ -639,13 +639,15 @@ nvidia_menu() {
         echo -e "🌸${RED} Nvidia Personal Configuration 🌸 ${RESET} "
         echo ""
         echo "1. 🌹 Power Limit & Fan Curve"
-        echo "2. 👈 Back to main menu"
+        echo "2. 🐧 Install Zen Kernel (NVIDIA-DKMS)"
+        echo "3. 👈 Back to main menu"
         echo ""
         read -p "Choose an option: " choice
 
         case "$choice" in
             1) nvidia_fan_setup ;;
-            2) break ;;
+            2) install_zen_kernel_nvidia ;; 
+            3) break ;;
             *) echo "❌ Invalid option." ;;
         esac
     done
@@ -826,6 +828,41 @@ EOF
     echo ""
     read -rp "🌸 Press Enter to return to the NVIDIA menu..."
 }
+
+
+install_zen_kernel_nvidia() {
+     echo ""
+    read -p "🌸 Do you want to install the Linux-Zen Kernel? (y/n): " confirm
+    [[ "$confirm" != "y" ]] && return
+
+    echo ""
+    echo "🐧 Installing Linux-Zen Kernel and headers..."
+    sudo pacman -S --noconfirm linux-zen linux-zen-headers
+
+    echo ""
+    read -p "🌹 Do you want to reinstall nvidia-dkms for the Zen kernel? (y/n): " reinstall_dkms
+    if [[ "$reinstall_dkms" == "y" ]]; then
+        echo "🔧 Reinstalling NVIDIA DKMS..."
+        sudo pacman -S --noconfirm nvidia-dkms
+    else
+        echo "⏩ Skipping NVIDIA DKMS reinstall..."
+    fi
+
+    echo ""
+    read -p "⚙️  Do you want to regenerate your GRUB config? (y/n): " update_grub
+    if [[ "$update_grub" == "y" ]]; then
+        echo "📝 Updating GRUB config..."
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+    else
+        echo "🔕 Skipping GRUB config update..."
+    fi
+
+    echo -e "${GREEN}🌸 Zen Kernel installation complete! You can select it from GRUB on next boot.${RESET}"
+    pause
+}
+
+
+
 
  
 # 🔁 MAIN MENU LOOP

@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Pretty colors
@@ -7,6 +8,10 @@ CYAN="\e[36m"
 YELLOW="\e[33m"
 PINK="\e[38m"
 RESET="\e[0m"
+
+
+LOG_DIR="$HOME/reakjra-CC-logs"
+
 
 pause() {
     echo ""
@@ -28,8 +33,9 @@ main_menu() {
     echo "7. 🎮 Install lib32* Multimedia"
     echo "8. 🎮 Install Gamemode and apply"
     echo "9. 🥚 Nvidia Configuration"
-    echo "10. 🌸 HyDE/Hypr Personal Settings"
-    echo "11. ❌ Exit"
+    echo "10. 🧹 Cleaner and Maintanance"
+    echo "11. 🌸 HyDE/Hypr Personal Settings"
+    echo "12. ❌ Exit"
     echo ""
 
     read -p "👉 Select an option (1-10): " choice
@@ -43,8 +49,9 @@ main_menu() {
         7) install_lib32_multimedia ;;
         8) install_gamemode_section ;; 
         9) nvidia_menu ;;
-        10) wm_settings_menu ;;
-        11) echo "👋 Goodbye!"; exit 0 ;;
+        10) cleaner_menu ;;
+        11) wm_settings_menu ;;
+        12) echo "👋 Goodbye!"; exit 0 ;;
         *) echo "❌ Invalid choice."; pause ;;
     esac
 }
@@ -87,6 +94,9 @@ mount_drives_section() {
     [[ "${#INDEXED_PARTS[@]}" -eq 0 ]] && echo "🚫 No usable partitions found." && return
 
     echo ""
+    echo -e "${RED}🌸 This uses ntfs-3g to mount the drives. ${RESET}"
+    echo -e "${RED}🌸 Keep in mind the partitions name are subject to change due the boot order.${RESET}"
+    echo ""
     read -p "👉 Enter the partition numbers to mount (e.g. 1,3,4): " selections
 
     # Make sure ntfs-3g is installed
@@ -98,13 +108,13 @@ mount_drives_section() {
     IFS=',' read -ra SELECTED <<< "$selections"
     for sel in "${SELECTED[@]}"; do
         idx=$((sel - 1))
-        [[ -z "${INDEXED_PARTS[$idx]}" ]] && echo "⚠️  Partition $sel is invalid, skipping." && continue
+        [[ -z "${INDEXED_PARTS[$idx]}" ]] && echo "⚠️ Partition $sel is invalid, skipping." && continue
 
         IFS="|" read -r name uuid fstype mountpoint <<< "${INDEXED_PARTS[$idx]}"
         dev="/dev/$name"
         mount_dir=~/"$name"
 
-        [[ -n "$mountpoint" ]] && echo "⚠️  $name is already mounted at $mountpoint. Skipping." && continue
+        [[ -n "$mountpoint" ]] && echo "" && echo "⚠️ $name is already mounted at $mountpoint. Skipping." && continue
 
         echo "🔗 Mounting $name to $mount_dir..."
         mkdir -p "$mount_dir"
@@ -119,7 +129,8 @@ mount_drives_section() {
         fi
     done
 
-    echo "🎉 Partition mounting section completed!"
+    echo ""
+    echo "🌹 Partition mounting section completed!"
     pause
 }
 
@@ -625,9 +636,241 @@ apply_wallbash_code_theme() {
     fi
 }
 
+# 🌸 CLEANER MENU
+cleaner_menu() {
+    while true; do
+
+        mkdir -p "$LOG_DIR"
+
+        clear
+        echo -e "${RED}🌸 Reakjra Cleaner - Clean & Maintain your system 🌸${RESET}"
+        echo ""
+        echo "1. 🗑️ Clean pacman cache"
+        echo "2. 🧹 Clean yay cache"
+        echo "3. 🧺 Remove orphaned packages"
+        echo "4. 📦 Full system update"
+        echo "5. 🔍 Check cache sizes"
+        echo "6. 🧼 Delete leftover files from a package"
+        echo "7. ♻️ Restore deleted files (from Trash)"
+        echo "8. ♻️ Restore removed orphan packages"
+        echo "9. ❌ Back to main menu"
+        echo ""
+        echo ""
+        echo -e "${RED} 🌸 Careful! This tool is not completely safe, you might end up removing important files! ${RESET}"
+        echo ""
+        echo ""
+
+        read -p "👉 Select an option: " choice
+        case $choice in
+            1) clean_pacman_cache ;;
+            2) clean_yay_cache ;;
+            3) remove_orphans ;;
+            4) full_update ;;
+            5) check_cache_sizes ;;
+            6) clean_package_traces ;;
+            7) restore_deleted_files ;;
+            8) restore_orphans ;;
+            9) break ;;
+            *) echo "❌ Invalid choice."; pause ;;
+        esac
+    done
+}
+
+clean_pacman_cache() {
+    echo ""
+    read -p "❓ Do you want to clean pacman cache? (y/n): " confirm
+    if [[ "$confirm" == "y" ]]; then
+        logfile="$LOG_DIR/clean_pacman_cache_$(date +%Y-%m-%dT%H-%M-%S).txt"
+        sudo pacman -Sc --noconfirm | tee "$logfile"
+        echo "📝 Log saved: $logfile"
+    fi
+    pause
+}
+
+clean_yay_cache() {
+    echo ""
+    read -p "❓ Do you want to clean yay cache? (y/n): " confirm
+    if [[ "$confirm" == "y" ]]; then
+        logfile="$LOG_DIR/clean_yay_cache_$(date +%Y-%m-%dT%H-%M-%S).txt"
+        yay -Sc --noconfirm | tee "$logfile"
+        echo "📝 Log saved: $logfile"
+    fi
+    pause
+}
+
+remove_orphans() {
+    echo ""
+    echo "🔍 Searching for orphaned packages..."
+    orphans=$(pacman -Qtdq 2>/dev/null)
+    if [[ -z "$orphans" ]]; then
+        echo "✅ No orphaned packages found!"
+    else
+        echo "🧺 Orphans found:"
+        echo "$orphans"
+        read -p "❓ Remove them? (y/n): " confirm
+        if [[ "$confirm" == "y" ]]; then
+            timestamp=$(date +%Y-%m-%dT%H-%M-%S)
+            logfile="$LOG_DIR/remove_orphans_$timestamp.txt"
+            echo "$orphans" > "$logfile"
+            sudo pacman -Rns $orphans
+            echo "📝 Orphan removal log saved at $logfile"
+        fi
+    fi
+    pause
+}
+
+full_update() {
+    echo ""
+    echo "📦 Running full system update..."
+    timestamp=$(date +%Y-%m-%dT%H-%M-%S)
+    logfile="$LOG_DIR/full_update_$timestamp.txt"
+    { sudo pacman -Syu --noconfirm; yay -Syu --noconfirm; } | tee "$logfile"
+    echo "📝 Update log saved: $logfile"
+    pause
+}
+
+check_cache_sizes() {
+    echo ""
+    echo "🔍 pacman cache:"
+    du -sh /var/cache/pacman/pkg
+    echo "🔍 yay cache:"
+    du -sh ~/.cache/yay
+    pause
+}
 
 
+# 🌸 CLEAN SPECIFIC PACKAGE
+clean_package_traces() {
+    echo ""
+    read -p "🌸 Enter the name of the package/app to clean: " pkg_name
+    [[ -z "$pkg_name" ]] && echo "❌ No package entered." && pause && return
 
+    forbidden=( "/" "/boot" "/etc" "bin" "sbin" "lib" "usr" "var" "*" "root" "system" )
+    for word in "${forbidden[@]}"; do
+        if [[ "$pkg_name" == *"$word"* ]]; then
+            echo -e "${RED}❌ Dangerous package name. Aborting for safety.${RESET}"
+            pause
+            return
+        fi
+    done
+
+    echo ""
+    echo "🔍 Checking if '$pkg_name' is installed..."
+
+    if pacman -Q "$pkg_name" &> /dev/null; then
+        echo "📦 Package found via pacman."
+        read -p "🗑️ Remove it with 'sudo pacman -Rns $pkg_name'? (y/n): " confirm
+        [[ "$confirm" == "y" ]] && sudo pacman -Rns "$pkg_name"
+    elif yay -Q "$pkg_name" &> /dev/null; then
+        echo "📦 Package found via yay."
+        read -p "🗑️ Remove it with 'yay -Rns $pkg_name'? (y/n): " confirm
+        [[ "$confirm" == "y" ]] && yay -Rns "$pkg_name"
+    elif paru -Q "$pkg_name" &> /dev/null; then
+        echo "📦 Package found via paru."
+        read -p "🗑️ Remove it with 'paru -Rns $pkg_name'? (y/n): " confirm
+        [[ "$confirm" == "y" ]] && paru -Rns "$pkg_name"
+    else
+        echo "🔍 Not found in package managers. Skipping uninstall step."
+    fi
+
+    echo ""
+    echo "🔍 Scanning for residual files..."
+    results=$(find ~ -iname "*$pkg_name*" 2>/dev/null | grep -vE "^/boot|^/etc|^/bin|^/sbin|^/lib|^/usr|^/var|^/dev")
+
+    if [[ -z "$results" ]]; then
+        echo "✅ No leftovers found."
+        pause
+        return
+    fi
+
+    echo "📁 Found:"
+    echo ""
+    echo "$results"
+    read -p "🧨 Move these to Trash? (y/n): " confirm
+    [[ "$confirm" != "y" ]] && echo "❌ Cancelled." && pause && return
+
+    trash_dir="$HOME/.local/share/Trash/files"
+    mkdir -p "$trash_dir"
+    timestamp=$(date +%Y-%m-%dT%H-%M-%S)
+    logfile="$LOG_DIR/clean_package_traces_${pkg_name}_$timestamp.txt"
+    touch "$logfile"
+
+    echo "$results" | while read path; do
+        if [[ -e "$path" ]]; then
+            mv "$path" "$trash_dir/"
+            echo "$path" >> "$logfile"
+            echo "🧹 Moved to Trash: $path"
+        fi
+    done
+
+    echo "📝 Log saved: $logfile"
+    pause
+}
+
+restore_deleted_files() {
+    log_dir="$LOG_DIR"
+    trash_dir="$HOME/.local/share/Trash/files"
+
+    logs=("$log_dir"/clean_package_traces_*.txt)
+    [[ ${#logs[@]} -eq 0 ]] && echo "❌ No deleted file logs found." && return
+
+    echo ""
+    echo -e "${CYAN}♻️ Restore deleted files (from Trash) 🌸${RESET}"
+    echo ""
+
+    for i in "${!logs[@]}"; do
+        echo "$((i+1))) $(basename "${logs[$i]}")"
+    done
+    echo ""
+    read -p "👉 Choose log(s) to restore (e.g. 1 or 1,2): " choice
+    IFS=',' read -ra indexes <<< "$choice"
+
+    for i in "${indexes[@]}"; do
+        idx=$((i - 1))
+        logfile="${logs[$idx]}"
+        echo "🔄 Restoring from: $(basename "$logfile")"
+
+        while IFS= read -r path; do
+            base=$(basename "$path")
+            dir=$(dirname "$path")
+            mkdir -p "$dir"
+            if [[ -e "$trash_dir/$base" ]]; then
+                mv "$trash_dir/$base" "$dir/"
+                echo "✅ Restored: $path"
+            else
+                echo "⚠️ Not in Trash: $base"
+            fi
+        done < "$logfile"
+    done
+    pause
+}
+
+restore_orphans() {
+    logs=("$LOG_DIR"/remove_orphans_*.txt)
+    [[ ${#logs[@]} -eq 0 ]] && echo "❌ No orphan logs found." && return
+
+    echo ""
+    echo -e "${CYAN}♻️ Restore orphaned packages 🌸${RESET}"
+    echo ""
+
+    for i in "${!logs[@]}"; do
+        echo "$((i+1))) $(basename "${logs[$i]}")"
+    done
+
+    echo ""
+    read -p "👉 Choose log(s) to restore (e.g. 1 or 1,3): " choice
+    IFS=',' read -ra indexes <<< "$choice"
+
+    for i in "${indexes[@]}"; do
+        idx=$((i - 1))
+        logfile="${logs[$idx]}"
+        echo "🔄 Reinstalling from: $(basename "$logfile")"
+        while IFS= read -r pkg; do
+            yay -S --needed --noconfirm "$pkg"
+        done < "$logfile"
+    done
+    pause
+}
 
 
 # NVIDIA RELATED 

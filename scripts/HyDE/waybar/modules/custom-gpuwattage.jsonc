@@ -1,0 +1,21 @@
+{
+    "custom/gpu_wattage": {
+        "exec": "nvidia-smi --query-gpu=power.limit --format=csv,noheader,nounits | awk '{printf \"%.0f\", $1}'",
+        "interval": 1,
+        "format": " {}w",
+        "tooltip": "true",
+        "menu": "on-click",
+        "menu-file": "~/.local/share/waybar/menus/gpu_wattage.xml",
+        "menu-actions": {
+            "wattage-100": "sudo nvidia-smi -pl 100 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 100W\"",
+            "wattage-120": "sudo nvidia-smi -pl 120 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 120W\"",
+            "wattage-130": "sudo nvidia-smi -pl 130 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 130W\"",
+            "wattage-140": "sudo nvidia-smi -pl 140 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 140W\"",
+            "wattage-150": "sudo nvidia-smi -pl 150 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 150W\"",
+            "wattage-175": "sudo nvidia-smi -pl 175 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 175W\"",
+            "wattage-200": "sudo nvidia-smi -pl 200 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 200W\"",
+            "wattage-220": "sudo nvidia-smi -pl 220 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 220W\"",
+            "wattage-250": "sudo nvidia-smi -pl 250 && notify-send \"GPU Wattage Set\" \"Set GPU power limit to 250W\""
+        }
+    }
+}

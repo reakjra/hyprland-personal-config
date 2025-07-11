@@ -13,3 +13,13 @@ For a dropdown menu it uses XML, which can be added to `~/.local/share/waybar/me
 ```sh
 ~/.local/share/waybar/layouts/hyprdots/<reakjra.jsonc>
 ```
+
+> `/menus/<menu>.xml` are files to make a waybar's menu, they are strictly used by `/modules/<module>.jsonc` files. 
+```sh
+~/.local/share/waybar/menus/<menu.xml>
+```
+
+> `/modules/<module>.jsonc` files are basically the things you see in the waybar. Like the clock, the app icons, the RAM usage, etc. etc. these files contains the information about how they behave and what they do
+```sh
+~/.local/share/waybar/modules/<module.jsonc>
+```

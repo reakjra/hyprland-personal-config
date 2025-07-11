@@ -505,18 +505,20 @@ wm_settings_menu() {
         echo ""
         echo -e "🌸${RED} WM Personal Settings (HyDE only) 🌸 ${RESET} "
         echo ""
-        echo "1. 🍼 Update userprefs.conf (it will override the current one)"
-        echo "2. 🍼 Update windowrules.conf (it will override the current one)"
-        echo "3. 🍼 Apply wallbash theme to Visual Studio Code"
-        echo "4. 👈 Back to main menu"
+        echo "1. 🍼 Import userprefs.conf (it will override the current one)"
+        echo "2. 🍼 Import windowrules.conf (it will override the current one)"
+        echo "3. 🍼 Import Reakjra's Waybar settings"
+        echo "4. 🍼 Apply wallbash theme to Visual Studio Code"
+        echo "5. 👈 Back to main menu"
         echo ""
         read -p "Choose an option: " choice
 
         case "$choice" in
             1) update_userprefs ;;
             2) update_windowsrules ;;
-            3) apply_wallbash_code_theme ;;
-            4) break ;;
+            3) import_waybar ;;
+            4) apply_wallbash_code_theme ;;
+            5) break ;;
             *) echo "❌ Invalid option." ;;
         esac
     done
@@ -551,7 +553,7 @@ update_userprefs() {
     echo "🗄️ Backup created at: $BACKUP"
 
     # Step 4: Download from GitHub
-    GITHUB_URL="https://raw.githubusercontent.com/reakjra/hyprland-personal-config/refs/heads/main/scripts/HyDE/userprefs.conf"
+    GITHUB_URL="https://raw.githubusercontent.com/reakjra/hyprland-personal-config/refs/heads/main/scripts/HyDE/hypr/userprefs.conf"
     echo "⬇️ Downloading new config from GitHub..."
 
     if curl -fsSL "$GITHUB_URL" -o "$TARGET"; then
@@ -592,7 +594,7 @@ update_windowsrules() {
     echo "🗄️ Backup created at: $BACKUP"
 
     # Step 4: Download from GitHub
-    GITHUB_URL="https://raw.githubusercontent.com/reakjra/hyprland-personal-config/refs/heads/main/scripts/HyDE/windowrules.conf"
+    GITHUB_URL="https://raw.githubusercontent.com/reakjra/hyprland-personal-config/refs/heads/main/scripts/HyDE/hypr/windowrules.conf"
     echo "⬇️ Downloading new config from GitHub..."
 
     if curl -fsSL "$GITHUB_URL" -o "$TARGET"; then
@@ -602,6 +604,179 @@ update_windowsrules() {
         cp "$BACKUP" "$TARGET"
         echo "🔁 Reverted to: $BACKUP"
     fi
+}
+
+
+# 🌸 WM SETTINGS: IMPORT WAYBAR
+import_waybar() {
+    echo ""
+
+    local confirm_import 
+    while true; do
+        read -p "🌸 Do you want to import Reakjra's waybar settings? (y/n): " confirm_import
+        case "$confirm_import" in
+            [yY]) 
+                break
+                ;;
+            [nN]) 
+                echo "❌ Cancelled."
+                pause
+                return 
+                ;;
+            *) 
+                echo "⚠️ Invalid input. Please enter 'y' or 'n'."
+                ;;
+        esac
+    done
+
+    echo ""
+
+    GITHUB_USERNAME="reakjra"
+    REPOSITORY_NAME="hyprland-personal-config"
+    BRANCH_NAME="main" 
+    API_BASE_URL="https://api.github.com/repos/${GITHUB_USERNAME}/${REPOSITORY_NAME}/contents"
+    RAW_BASE_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPOSITORY_NAME}/${BRANCH_NAME}"
+
+    # --- Import Waybar Layout (reakjra.jsonc) ---
+    echo -e "\n📄 Importing layout: reakjra.jsonc"
+    layout_path="scripts/HyDE/waybar/reakjra.jsonc"
+    layout_url="${RAW_BASE_URL}/${layout_path}"
+    layout_target="$HOME/.local/share/waybar/layouts/hyprdots/reakjra.jsonc"
+
+    if [[ -e "$layout_target" ]]; then
+        local ow_layout 
+        while true; do
+            read -p "❓ '$layout_target' already exists. Overwrite? (y/n): " ow_layout
+            case "$ow_layout" in
+                [yY])
+                    curl -sSL "$layout_url" -o "$layout_target" && echo "✅ Overwritten."
+                    break
+                    ;;
+                [nN])
+                    echo "⏩ Skipped."
+                    break
+                    ;;
+                *)
+                    echo "⚠️ Invalid input. Please enter 'y' or 'n'."
+                    ;;
+            esac
+        done
+    else
+        curl -sSL "$layout_url" -o "$layout_target" && echo "✅ Downloaded."
+    fi
+
+    # --- Import Waybar Modules (.jsonc) ---
+    echo -e "\n📦 Importing all Waybar modules (.jsonc)..."
+    modules_api_path="scripts/HyDE/waybar/modules"
+    modules_api_url="${API_BASE_URL}/${modules_api_path}"
+    modules_raw_dir="${RAW_BASE_URL}/${modules_api_path}"
+    modules_target_dir="$HOME/.local/share/waybar/modules"
+
+    # Fetch module files using GitHub API and jq
+    echo "Fetching module list from: $modules_api_url"
+    echo ""
+    module_files=$(curl -sSL "$modules_api_url" | jq -r '.[] | select(.type=="file" and (.name | endswith(".jsonc"))) | .name' 2>/dev/null)
+
+    if [ $? -ne 0 ] || [ -z "$module_files" ]; then
+        echo "❌ Error: Could not fetch module list or 'jq' is not installed/path is incorrect. Please ensure 'jq' is installed."
+        pause
+        return
+    fi
+
+    for file in $module_files; do
+        url="${modules_raw_dir}/${file}"
+        target="${modules_target_dir}/${file}"
+        echo "📄 Module: $file"
+        if [[ -e "$target" ]]; then
+            local ow_module
+            while true; do
+                read -p "❓ '$file' exists. Overwrite? (y/n): " ow_module
+                case "$ow_module" in
+                    [yY])
+                        curl -sSL "$url" -o "$target" && echo "✅ Overwritten."
+                        break
+                        ;;
+                    [nN])
+                        echo "⏩ Skipped."
+                        break
+                        ;;
+                    *)
+                        echo "⚠️ Invalid input. Please enter 'y' or 'n'."
+                        ;;
+                esac
+            done
+        else
+            curl -sSL "$url" -o "$target" && echo "✅ Downloaded."
+        fi
+    done
+
+    # --- Import Waybar Menus (.xml) ---
+    echo -e "\n📂 Importing all menu files (.xml)..."
+    menus_api_path="scripts/HyDE/waybar/menus"
+    menus_api_url="${API_BASE_URL}/${menus_api_path}"
+    menus_raw_dir="${RAW_BASE_URL}/${menus_api_path}"
+    menus_target_dir="$HOME/.local/share/waybar/menus"
+
+    # Fetch menu files using GitHub API and jq
+    echo "Fetching menu list from: $menus_api_url"
+    echo ""
+    menu_files=$(curl -sSL "$menus_api_url" | jq -r '.[] | select(.type=="file" and (.name | endswith(".xml"))) | .name' 2>/dev/null)
+
+    if [ $? -ne 0 ] || [ -z "$menu_files" ]; then
+        echo "❌ Error: Could not fetch menu list or 'jq' is not installed/path is incorrect. Please ensure 'jq' is installed."
+        pause
+        return
+    fi
+
+    for file in $menu_files; do
+        url="${menus_raw_dir}/${file}"
+        target="${menus_target_dir}/${file}"
+        echo "📄 Menu: $file"
+        if [[ -e "$target" ]]; then
+            local ow_menu
+            while true; do
+                read -p "❓ '$file' exists. Overwrite? (y/n): " ow_menu
+                case "$ow_menu" in
+                    [yY])
+                        curl -sSL "$url" -o "$target" && echo "✅ Overwritten."
+                        break
+                        ;;
+                    [nN])
+                        echo "⏩ Skipped."
+                        break
+                        ;;
+                    *)
+                        echo "⚠️ Invalid input. Please enter 'y' or 'n'."
+                        ;;
+                esac
+            done
+        else
+            curl -sSL "$url" -o "$target" && echo "✅ Downloaded."
+        fi
+    done
+
+    echo ""
+
+    local confirm_run_waybar 
+    while true; do
+        read -p "🌟 Do you want to run 'waybar.py -G' now? (y/n): " confirm_run_waybar
+        case "$confirm_run_waybar" in
+            [yY])
+                waybar.py -G
+                break
+                ;;
+            [nN])
+                echo "⏩ Skipped 'waybar.py -G' command."
+                break
+                ;;
+            *)
+                echo "⚠️ Invalid input. Please enter 'y' or 'n'."
+                ;;
+        esac
+    done
+
+    echo -e "\n🌸 Done importing Reakjra's Waybar config!"
+    pause
 }
 
 # 🌸 APPLY WALLBASH THEME TO VISUAL STUDIO CODE
@@ -970,15 +1145,14 @@ LOG_FILE="/tmp/nvidia_fan_control.log"
 > "$LOG_FILE"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-
 FAN_CURVE=(
     "40:30"
     "50:40"
     "60:50"
-    "70:60"
-    "75:65"
-    "80:70"
-    "90:90"
+    "70:65"
+    "75:70"
+    "80:75"
+    "90:100"
 )
 INTERVAL_SECONDS=5
 

@@ -6,6 +6,9 @@ For a dropdown menu it uses XML, which can be added to `~/.local/share/waybar/me
 
 
 ## 🌸 Files
+> NOTE: any update made with waybar should be followed by `waybar.py -G` command to apply the changes.
+
+
 > `reakjra.jsonc`. This one modules the waybar's look, like pills, icons, etc. etc. This goes in:
 ```sh
 ~/.local/share/waybar/layouts/hyprdots/<reakjra.jsonc>

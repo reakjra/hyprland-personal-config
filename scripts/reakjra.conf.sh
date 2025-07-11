@@ -970,14 +970,15 @@ LOG_FILE="/tmp/nvidia_fan_control.log"
 > "$LOG_FILE"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+
 FAN_CURVE=(
     "40:30"
     "50:40"
     "60:50"
-    "70:65"
-    "75:70"
-    "80:75"
-    "90:100"
+    "70:60"
+    "75:65"
+    "80:70"
+    "90:90"
 )
 INTERVAL_SECONDS=5
 

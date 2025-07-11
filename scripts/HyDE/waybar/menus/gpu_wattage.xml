@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkMenu" id="menu">
+    <child>
+      <object class="GtkMenuItem" id="wattage-100">
+        <property name="label">100W</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="wattage-120">
+        <property name="label">120W</property>
+      </object>
+    </child>
+      <child>
+      <object class="GtkMenuItem" id="wattage-130">
+        <property name="label">130W</property>
+      </object>
+    </child>
+      <child>
+      <object class="GtkMenuItem" id="wattage-140">
+        <property name="label">140W</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="wattage-150">
+        <property name="label">150W</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="wattage-175">
+        <property name="label">175W</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="wattage-200">
+        <property name="label">200W</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="wattage-220">
+        <property name="label">220W</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="wattage-250">
+        <property name="label">250W</property>
+      </object>
+    </child>
+    </object>
+</interface>

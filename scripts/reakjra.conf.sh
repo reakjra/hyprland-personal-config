@@ -118,11 +118,14 @@ mount_drives_section() {
         dev="/dev/$name"
 
         echo ""
+        [[ -n "$mountpoint" ]] && echo "" && echo "⚠️ $name is already mounted at $mountpoint. Skipping." && continue
+        echo ""
+        
         read -p "🆔 Enter a custom mount name for $name (leave empty to use '$name'): " custom_name
         mount_name="${custom_name:-$name}"
         mount_dir="/mnt/$mount_name"  
 
-        [[ -n "$mountpoint" ]] && echo "" && echo "⚠️ $name is already mounted at $mountpoint. Skipping." && continue
+        
 
         echo "🔗 Mounting $name to $mount_dir..."
         sudo mkdir -p "$mount_dir"

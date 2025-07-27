@@ -16,23 +16,24 @@ pause() {
   echo ""
 }
 
-# ✨ MAIN MENU
+##################################### ✨ MAIN MENU
 main_menu() {
   clear
   echo -e "${RED}🌸 Welcome to Reakjra's personal EndeavourOS configuration script! 🌸${RESET}"
   echo ""
   echo "1. 📁 Mount partitions (NTFS)"
   echo "2. 🕒 Fix dual boot time issue"
-  echo "3. 🗣  Install Discord with fix"
+  echo "3. 🧏🏻‍♀️ Install Discord with fix"
   echo "4. 🎵 Spotify & Spicetify Patch"
-  echo "5. 🎮 Install Steam, Bottles and GE-Proton"
-  echo "6. 🎮 Install MangoHud and vkBasalt with configs"
-  echo "7. 🎮 Install lib32* Multimedia"
-  echo "8. 🎮 Install Gamemode and apply"
-  echo "9. 🥚 Nvidia Configuration"
-  echo "10. 🧹 Cleaner and Maintanance"
-  echo "11. 🌸 HyDE/Hypr Personal Settings"
-  echo "12. ❌ Exit"
+  echo "5. 🍿 Install Ani-cli, Aw-cli & Anime4K shaders"
+  echo "6. 🎮 Install Steam, Bottles and GE-Proton"
+  echo "7. 🎮 Install MangoHud and vkBasalt with configs"
+  echo "8. 🎮 Install lib32* Multimedia"
+  echo "9. 🎮 Install Gamemode and apply"
+  echo "10. 🥚 Nvidia Configuration"
+  echo "11. 🧹 Cleaner and Maintanance"
+  echo "12. 🌸 HyDE/Hypr Personal Settings"
+  echo "13. ❌ Exit"
   echo ""
 
   read -p "👉 Select an option (1-10): " choice
@@ -41,14 +42,15 @@ main_menu() {
   2) fix_dualboot_time ;;
   3) install_discord_with_fix ;;
   4) install_spotify_spicetify ;;
-  5) install_gaming_section ;;
-  6) install_gaming_monitoring_tools ;;
-  7) install_lib32_multimedia ;;
-  8) install_gamemode_section ;;
-  9) nvidia_menu ;;
-  10) cleaner_menu ;;
-  11) wm_settings_menu ;;
-  12)
+  5) install_ani_aw_cli_section ;;
+  6) install_gaming_section ;;
+  7) install_gaming_monitoring_tools ;;
+  8) install_lib32_multimedia ;;
+  9) install_gamemode_section ;;
+  10) nvidia_menu ;;
+  11) cleaner_menu ;;
+  12) wm_settings_menu ;;
+  13)
     echo "👋 Goodbye!"
     exit 0
     ;;
@@ -60,7 +62,7 @@ main_menu() {
 }
 
 
-# 🌸 MOUNT NTFS PARTITIONS
+##################################### 🌸 MOUNT NTFS PARTITIONS
 mount_drives_section() {
     echo ""
     read -p "📦 Do you want to proceed with the partition mounting section? (y/n): " do_mount
@@ -153,7 +155,7 @@ mount_drives_section() {
 
 
 
-# 🌸 INSTALL STEAM, BOTTLES AND GE-PROTON
+##################################### 🌸 INSTALL STEAM, BOTTLES AND GE-PROTON
 install_gaming_section() {
   echo ""
   read -p "🎮 Do you want to install Steam, Bottles and GE-Proton? (y/n): " confirm
@@ -203,7 +205,7 @@ install_gaming_section() {
   pause
 }
 
-# 🌸  FIX DUAL BOOT TIME
+##################################### 🌸  FIX DUAL BOOT TIME
 fix_dualboot_time() {
   echo ""
   read -p "🕒 Do you want to fix the dual boot time issue (Linux vs Windows clock)? (y/n): " confirm
@@ -353,7 +355,7 @@ EOF
   pause
 }
 
-# 🌸 Install Discord with fix
+##################################### 🌸 Install Discord with fix
 install_discord_with_fix() {
   echo ""
   read -p "💬 Do you want to install Discord? (y/n): " confirm
@@ -423,7 +425,7 @@ EOF
   pause
 }
 
-# 🌸 SPOTIFY & SPICETIFY
+##################################### 🌸 SPOTIFY & SPICETIFY
 install_spotify_spicetify() {
   echo ""
   echo "🎵 This will install Spotify and patch it using Spicetify CLI + Marketplace."
@@ -448,7 +450,7 @@ install_spotify_spicetify() {
   pause
 }
 
-# 🌸 LIB32 MULTIMEDIA
+##################################### 🌸 LIB32 MULTIMEDIA
 install_lib32_multimedia() {
   echo ""
   echo "🎮 This will install essential lib32 multimedia libraries for better audio/video support in some games."
@@ -465,7 +467,7 @@ install_lib32_multimedia() {
   pause
 }
 
-# 🌸 INSTALL GAMEMODE
+##################################### 🌸 INSTALL GAMEMODE
 install_gamemode_section() {
   echo ""
   read -p "🌸 Do you want to install and configure Gamemode? (y/n): " confirm
@@ -511,7 +513,143 @@ install_gamemode_section() {
   pause
 }
 
-# 🌸 WM SETTINGS MENU
+
+#################################### 🌸 INSTALL ANI-CLI, AW-CLI & ANIME4K SHADERS | This is so bad written : fix!!!
+install_ani_aw_cli_section() {
+ 
+  echo ""
+  echo "😊 Checking for mpv..."
+
+  # Check mpv
+  if ! command -v mpv &>/dev/null; then
+    echo "📦 mpv not found. Installing..."
+    sudo pacman -S --noconfirm mpv
+  else
+    echo "✅ mpv is already installed."
+  fi
+
+  echo ""
+
+  # ani-cli
+  read -p "🎥 Install ani-cli (yay)? [y/n/s]: " ani
+  if [[ "$ani" == "y" ]]; then
+    yay -S --noconfirm ani-cli
+  elif [[ "$ani" == "n" ]]; then
+    echo "❌ Returning to menu..."
+    pause
+    return
+  else
+    echo "⏩ Skipping ani-cli."
+  fi
+
+  echo ""
+
+  # pipx
+  read -p "🧪 Install pipx (required for aw-cli)? [y/n/s]: " pipx_ans
+  if [[ "$pipx_ans" == "y" ]]; then
+    sudo pacman -S --noconfirm python-pipx
+    pipx ensurepath
+  elif [[ "$pipx_ans" == "n" ]]; then
+    echo "❌ Returning to menu..."
+    pause
+    return
+  else
+    echo "⏩ Skipping pipx."
+  fi
+
+  echo ""
+
+  # aw-cli
+  read -p "🗣️ Install aw-cli (Italian subs)? [y/n/s]: " aw
+  if [[ "$aw" == "y" ]]; then
+    pipx install aw-cli
+  elif [[ "$aw" == "n" ]]; then
+    echo "❌ Returning to menu..."
+    pause
+    return
+  else
+    echo "⏩ Skipping aw-cli."
+  fi
+
+  echo ""
+
+  # SSL key for aw-cli
+  read -p "🔐 Add SSL certificate (required for aw-cli)? [y/n/s]: " ssl
+  if [[ "$ssl" == "y" ]]; then
+    cert_file="$HOME/SSL.com-TLS-T-ECC-R2.pem"
+    curl -o "$cert_file" https://ssl.com/repo/certs/SSL.com-TLS-T-ECC-R2.pem
+    sudo trust anchor "$cert_file"
+    rm "$cert_file"
+    echo "✅ Certificate added and cleaned up."
+  elif [[ "$ssl" == "n" ]]; then
+    echo "❌ Returning to menu..."
+    pause
+    return
+  else
+    echo "⏩ Skipping SSL cert."
+  fi
+
+  echo ""
+
+  # Anime4K shaders
+  read -p "🌟 Install Anime4K shaders and apply configs (will overwrite mpv configs)? [y/n/s]: " shaders
+  if [[ "$shaders" == "s" ]]; then
+    echo "⏩ Skipping Anime4K setup."
+    pause
+    return
+  elif [[ "$shaders" != "y" ]]; then
+    echo "❌ Returning to menu..."
+    pause
+    return
+  fi
+
+  echo ""
+  echo "📦 Cloning Anime4K repo..."
+  git clone https://github.com/bloc97/Anime4K.git ~/Anime4K
+
+  echo ""
+  shaders_dir="$HOME/.config/mpv/shaders"
+  backup_dir="$HOME/.config/mpv/mpv_backup"
+  mkdir -p "$shaders_dir" "$backup_dir"
+
+  echo "🗄️ Backing up current mpv configs (if any)..."
+  [[ -f "$HOME/.config/mpv/mpv.conf" ]] && cp "$HOME/.config/mpv/mpv.conf" "$backup_dir/"
+  [[ -f "$HOME/.config/mpv/input.conf" ]] && cp "$HOME/.config/mpv/input.conf" "$backup_dir/"
+
+  echo ""
+  echo "🎨 Copying all .glsl shaders to ~/.config/mpv/shaders..."
+  find ~/Anime4K/glsl/ -type f -name "*.glsl" -exec cp {} "$shaders_dir/" \;
+
+  echo ""
+  echo "📝 Writing new mpv.conf and input.conf..."
+
+  cat > "$HOME/.config/mpv/mpv.conf" <<EOF
+# Optimized shaders for lower-end GPU: Mode A (Fast)
+glsl-shaders="~~/shaders/Anime4K_Clamp_Highlights.glsl:~~/shaders/Anime4K_Restore_CNN_M.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_M.glsl:~~/shaders/Anime4K_AutoDownscalePre_x2.glsl:~~/shaders/Anime4K_AutoDownscalePre_x4.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_S.glsl"
+EOF
+
+  cat > "$HOME/.config/mpv/input.conf" <<EOF
+# Optimized shaders for lower-end GPU:
+CTRL+1 no-osd change-list glsl-shaders set "~~/shaders/Anime4K_Clamp_Highlights.glsl:~~/shaders/Anime4K_Restore_CNN_M.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_M.glsl:~~/shaders/Anime4K_AutoDownscalePre_x2.glsl:~~/shaders/Anime4K_AutoDownscalePre_x4.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_S.glsl"; show-text "Anime4K: Mode A (Fast)"
+CTRL+2 no-osd change-list glsl-shaders set "~~/shaders/Anime4K_Clamp_Highlights.glsl:~~/shaders/Anime4K_Restore_CNN_Soft_M.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_M.glsl:~~/shaders/Anime4K_AutoDownscalePre_x2.glsl:~~/shaders/Anime4K_AutoDownscalePre_x4.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_S.glsl"; show-text "Anime4K: Mode B (Fast)"
+CTRL+3 no-osd change-list glsl-shaders set "~~/shaders/Anime4K_Clamp_Highlights.glsl:~~/shaders/Anime4K_Upscale_Denoise_CNN_x2_M.glsl:~~/shaders/Anime4K_AutoDownscalePre_x2.glsl:~~/shaders/Anime4K_AutoDownscalePre_x4.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_S.glsl"; show-text "Anime4K: Mode C (Fast)"
+CTRL+4 no-osd change-list glsl-shaders set "~~/shaders/Anime4K_Clamp_Highlights.glsl:~~/shaders/Anime4K_Restore_CNN_M.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_M.glsl:~~/shaders/Anime4K_Restore_CNN_S.glsl:~~/shaders/Anime4K_AutoDownscalePre_x2.glsl:~~/shaders/Anime4K_AutoDownscalePre_x4.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_S.glsl"; show-text "Anime4K: Mode A+A (Fast)"
+CTRL+5 no-osd change-list glsl-shaders set "~~/shaders/Anime4K_Clamp_Highlights.glsl:~~/shaders/Anime4K_Restore_CNN_Soft_M.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_M.glsl:~~/shaders/Anime4K_AutoDownscalePre_x2.glsl:~~/shaders/Anime4K_AutoDownscalePre_x4.glsl:~~/shaders/Anime4K_Restore_CNN_Soft_S.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_S.glsl"; show-text "Anime4K: Mode B+B (Fast)"
+CTRL+6 no-osd change-list glsl-shaders set "~~/shaders/Anime4K_Clamp_Highlights.glsl:~~/shaders/Anime4K_Upscale_Denoise_CNN_x2_M.glsl:~~/shaders/Anime4K_AutoDownscalePre_x2.glsl:~~/shaders/Anime4K_AutoDownscalePre_x4.glsl:~~/shaders/Anime4K_Restore_CNN_S.glsl:~~/shaders/Anime4K_Upscale_CNN_x2_S.glsl"; show-text "Anime4K: Mode C+A (Fast)"
+CTRL+0 no-osd change-list glsl-shaders clr ""; show-text "GLSL shaders cleared"
+EOF
+
+  echo ""
+  echo "🧹 Cleaning up ~/Anime4K repo..."
+  rm -rf ~/Anime4K
+
+  echo ""
+  echo -e "${GREEN}🌸 Ani-cli, aw-cli, Anime4K shaders & mpv installed successfully!!!!!!!!!! ${RESET}"
+  pause
+}
+
+
+#################################### 🌸 WM SETTINGS MENU
 wm_settings_menu() {
   while true; do
     clear
@@ -537,7 +675,7 @@ wm_settings_menu() {
   done
 }
 
-# 🌸 WM SETTINGS: USERPREFS
+##################################### 🌸 WM SETTINGS: USERPREFS
 update_userprefs() {
   echo -e "\n🌸 Updating userprefs.conf from remote GitHub repository..."
 
@@ -578,7 +716,7 @@ update_userprefs() {
   fi
 }
 
-# 🌸  UPDATE WINDOWRULES.CONF
+##################################### 🌸  UPDATE WINDOWRULES.CONF
 update_windowsrules() {
   echo -e "\n🌸 Updating windowrules.conf from remote GitHub repository..."
 
@@ -619,7 +757,7 @@ update_windowsrules() {
   fi
 }
 
-# 🌸 WM SETTINGS: IMPORT WAYBAR
+##################################### 🌸 WM SETTINGS: IMPORT WAYBAR
 import_waybar() {
   echo ""
 
@@ -791,7 +929,7 @@ import_waybar() {
   pause
 }
 
-# 🌸 APPLY WALLBASH THEME TO VISUAL STUDIO CODE
+##################################### 🌸 APPLY WALLBASH THEME TO VISUAL STUDIO CODE
 apply_wallbash_code_theme() {
   SCRIPT="$HOME/.config/hyde/wallbash/scripts/code.sh"
 
@@ -822,7 +960,7 @@ apply_wallbash_code_theme() {
   fi
 }
 
-# 🌸 CLEANER MENU
+##################################### 🌸 CLEANER MENU
 cleaner_menu() {
   while true; do
 
@@ -865,6 +1003,7 @@ cleaner_menu() {
   done
 }
 
+####################################
 clean_pacman_cache() {
   echo ""
   read -p "❓ Do you want to clean pacman cache? (y/n): " confirm
@@ -876,6 +1015,7 @@ clean_pacman_cache() {
   pause
 }
 
+####################################
 clean_yay_cache() {
   echo ""
   read -p "❓ Do you want to clean yay cache? (y/n): " confirm
@@ -887,6 +1027,7 @@ clean_yay_cache() {
   pause
 }
 
+####################################
 remove_orphans() {
   echo ""
   echo "🔍 Searching for orphaned packages..."
@@ -908,6 +1049,7 @@ remove_orphans() {
   pause
 }
 
+####################################
 full_update() {
   echo ""
   echo "📦 Running full system update..."
@@ -930,7 +1072,7 @@ check_cache_sizes() {
   pause
 }
 
-# 🌸 CLEAN SPECIFIC PACKAGE
+##################################### 🌸 CLEAN SPECIFIC PACKAGE
 clean_package_traces() {
   echo ""
   read -p "🌸 Enter the name of the package/app to clean: " pkg_name
@@ -998,6 +1140,7 @@ clean_package_traces() {
   pause
 }
 
+####################################
 restore_deleted_files() {
   log_dir="$LOG_DIR"
   trash_dir="$HOME/.local/share/Trash/files"
@@ -1036,6 +1179,7 @@ restore_deleted_files() {
   pause
 }
 
+####################################
 restore_orphans() {
   logs=("$LOG_DIR"/remove_orphans_*.txt)
   [[ ${#logs[@]} -eq 0 ]] && echo "❌ No orphan logs found." && return
@@ -1063,7 +1207,7 @@ restore_orphans() {
   pause
 }
 
-# NVIDIA RELATED
+##################################### NVIDIA RELATED
 
 nvidia_menu() {
   while true; do
@@ -1086,6 +1230,7 @@ nvidia_menu() {
   done
 }
 
+####################################
 nvidia_fan_setup() {
   clear
   echo -e "\n🌸 ${RED} NVIDIA GPU Fan Curve & Power Limit Setup 🌸 ${RESET}\n"
@@ -1260,6 +1405,7 @@ EOF
   read -rp "🌸 Press Enter to return to the NVIDIA menu..."
 }
 
+####################################
 install_zen_kernel_nvidia() {
   echo ""
   read -p "🌸 Do you want to install the Linux-Zen Kernel? (y/n): " confirm
@@ -1292,11 +1438,11 @@ install_zen_kernel_nvidia() {
 }
 
 
-#kde_config() {
-#
-# }
 
-# 🔁 MAIN MENU LOOP
+##################################### 🔁 MAIN MENU LOOP
 while true; do
   main_menu
 done
+
+
+

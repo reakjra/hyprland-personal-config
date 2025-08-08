@@ -28,8 +28,10 @@ i5-13600K
 - [🎮 lib32* games fixes](#lib32-fixes)
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
 - [🎮 Gaming Related](https://github.com/reakjra/hyprland-personal-config/blob/main/gaming/readme.md)
+- [🤖 Waydroid + Libhoudini](#waydroid)
 - [🌸 Setting up WM](#setting-up-wm)
 - [🌸 Scripts](https://github.com/reakjra/hyprland-personal-config/blob/main/scripts/)
+
 
 ---
 
@@ -261,6 +263,75 @@ Most in-game settings let you tweak gamma/contrast, but **saturation** is tricki
 
 ---
 
+## Waydroid
+> 1. Install waydroid! 
+```sh
+yay -S waydroid
+```
+
+> 2. Make Network Work with Firewalld by creating a trusted zone
+```sh
+sudo firewall-cmd --zone=trusted --add-interface=waydroid0 --permanent
+sudo firewall-cmd --zone=trusted --add-masquerade --permanent
+sudo firewall-cmd --zone=trusted --add-forward --permanent
+sudo firewall-cmd --reload
+```
+
+> 3. Initialize Waydroid with GAPPS (Google applications)
+```sh
+sudo waydroid init -s GAPPS -f
+``` 
+
+> 4. Activation & Permissions (One needed for Google Services and one to make games able to run)
+```sh
+waydroid session start
+sudo waydroid shell
+>:\ sqlite3 /data/data/com.google.android.gsf/databases/gservices.db "select * from main where name = 'android_id';"
+```
+> Gather the Android ID, navigate to [https://www.google.com/android/uncertified](https://www.google.com/android/uncertified) and activate it. Then, restart the session, if it doesn't work, clear the Google Services & Play Store caches. 
+For permissions (still inside waydroid's shell):
+```sh
+chmod -R 777 /data/media/0/Android/data
+chmod -R 777 /data/media/0/Android/obb
+```
+
+> 5. Shutdown & Libhoudini. Shut it first!
+```sh
+waydroid session stop
+sudo systemctl stop waydroid-container
+```
+> Install libhoudini
+```sh
+git clone https://github.com/casualsnek/waydroid_script
+cd waydroid_script
+```
+> Do it.
+```sh
+python3 -m venv venv
+venv/bin/pip install -r requirements.txt
+
+sudo venv/bin/python3 main.py
+```
+> Choose Android 13 > Install > GAPPS + libhoudini
+
+> EXTRAS:
+> Hide Waydroid apps from runners like krunner or custom launchers:
+```sh
+find ~/.local/share/applications -name "waydroid*.desktop" -exec sed -i -e '/^\[Desktop Entry\]/aNoDisplay=true' {} \;
+```
+> Custom .desktop entry to fully shut down Waydroid:
+```sh
+[Desktop Entry]
+Icon=waydroid
+Type=Application
+Name=Waydroid Disable
+Exec=/bin/bash -c "waydroid session stop && sudo systemctl stop waydroid-container"
+Categories=X-WayDroid-App;Utility;
+X-Purism-FormFactor=Workstation;Mobile;
+NoDisplay=false
+```
+
+---
 
 ## Setting up WM
 

@@ -235,7 +235,7 @@ install_gaming_monitoring_tools() {
     echo "✅ vkBasalt is already installed."
   else
     echo "📦 Installing vkBasalt..."
-    sudo pacman -S --noconfirm vkbasalt
+    yay -S --noconfirm vkbasalt
   fi
 
   # Ask for MangoHud config type

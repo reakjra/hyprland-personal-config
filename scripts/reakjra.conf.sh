@@ -131,7 +131,7 @@ mount_drives_section() {
                 sudo dmesg | tail -n 50
                 echo ""
                 echo "👉 If you see 'volume is dirty' or 'hibernated', boot into Windows and run:"
-                echo "   chkdsk /f on the corresponding drive letter, then fully shut down (not reboot)."
+                echo "   chkdsk X: /f on the corresponding drive letter, then fully shut down."
                 echo "   Also consider disabling Fast Startup."
                 continue
             fi

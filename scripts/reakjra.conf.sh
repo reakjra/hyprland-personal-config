@@ -125,7 +125,6 @@ mount_drives_section() {
         sudo mkdir -p "$mount_dir"
 
         if [[ "$fstype" == "ntfs" ]]; then
-            # Runtime mount with current user's uid/gid (same as your original behavior)
             if ! sudo mount -t ntfs3 -o uid=$(id -u),gid=$(id -g) "$dev" "$mount_dir"; then
                 echo "❌ Mount failed for $name."
                 echo "ℹ️  Checking kernel log (last lines):"

@@ -132,7 +132,7 @@ mount_drives_section() {
                 echo ""
                 echo "👉 If you see 'volume is dirty' or 'hibernated', boot into Windows and run:"
                 echo "   chkdsk X: /f on the corresponding drive letter, then fully shut down."
-                echo "   Also consider disabling Fast Startup."
+                echo "   Also consider disabling Fast Boot."
                 continue
             fi
         else
@@ -154,17 +154,67 @@ mount_drives_section() {
                 read -p "👉 Enter 1 or 2: " own_choice
 
                 if [[ "$own_choice" == "2" ]]; then
-                    echo "UUID=${uuid} /mnt/${mount_name} ntfs3 defaults,rw,user,exec,umask=000 0 0" | sudo tee -a /etc/fstab > /dev/null
+                    new_line="UUID=${uuid} /mnt/${mount_name} ntfs3 defaults,rw,user,exec,umask=000 0 0"
                 else
                     uid_now=$(id -u)
                     gid_now=$(id -g)
-                    echo "UUID=${uuid} /mnt/${mount_name} ntfs3 defaults,uid=${uid_now},gid=${gid_now},rw,user,exec,umask=022 0 0" | sudo tee -a /etc/fstab > /dev/null
+                    new_line="UUID=${uuid} /mnt/${mount_name} ntfs3 defaults,uid=${uid_now},gid=${gid_now},rw,user,exec,umask=022 0 0"
+                fi
+                existing_lines="$(grep -n "UUID=${uuid}" /etc/fstab || true)"
+                if [[ -n "$existing_lines" ]]; then
+                    echo ""
+                    echo "⚠️ An entry with this UUID alrready exists in /etc/fstab:"
+                    echo "$existing_lines"
+                    echo ""
+                    echo "Choose how to proceed:"
+                    echo "  r) Replace all existing lines for this UUID"
+                    echo "  c) Continue and append a new line anyway"
+                    echo "  s) Skip writing to /etc/fstab"
+                    read -p "👉 Enter r/c/s: " conflict_choice
+
+                    case "$conflict_choice" in
+                        r|R)
+                            # Replace every matching line with our new_line
+                            sudo sed -i "\|UUID=${uuid}|c ${new_line}" /etc/fstab
+                            echo "✅ Replaced existing entry(ies) for UUID ${uuid}."
+                            ;;
+                        c|C)
+                            echo "$new_line" | sudo tee -a /etc/fstab > /dev/null
+                            echo "✅ Appended new entry to /etc/fstab."
+                            ;;
+                        *)
+                            echo "↩️ Skipped editing /etc/fstab."
+                            ;;
+                    esac
+                else
+                    echo "$new_line" | sudo tee -a /etc/fstab > /dev/null
+                    echo "✅ Added to /etc/fstab"
                 fi
             else
-                echo "UUID=${uuid} /mnt/${mount_name} ${fstype} defaults 0 0" | sudo tee -a /etc/fstab > /dev/null
+                new_line="UUID=${uuid} /mnt/${mount_name} ${fstype} defaults 0 0"
+                existing_lines="$(grep -n "UUID=${uuid}" /etc/fstab || true)"
+                if [[ -n "$existing_lines" ]]; then
+                    echo ""
+                    echo "⚠️ An entry with this UUID alrready exists in /etc/fstab:"
+                    echo "$existing_lines"
+                    echo ""
+                    echo "Choose how to proceed:"
+                    echo "  r) Replace all existing lines for this UUID"
+                    echo "  c) Continue and append a new line anyway"
+                    echo "  s) Skip writing to /etc/fstab"
+                    read -p "👉 Enter [r/c/s]: " conflict_choice
+
+                    case "$conflict_choice" in
+                        r|R) sudo sed -i "\|UUID=${uuid}|c ${new_line}" /etc/fstab; echo "✅ Replaced existing entry(ies).";;
+                        c|C) echo "$new_line" | sudo tee -a /etc/fstab > /dev/null; echo "✅ Appended new entry.";;
+                        *)   echo "↩️ Skipped editing /etc/fstab.";;
+                    esac
+                else
+                    echo "$new_line" | sudo tee -a /etc/fstab > /dev/null
+                    echo "✅ Added to /etc/fstab"
+                fi
             fi
             echo ""
-            echo "✅ Added to /etc/fstab"
         fi
     done
 
@@ -197,7 +247,7 @@ install_gaming_section() {
     echo "✅ Bottles is already installed."
   else
     echo "📦 Installing Bottles..."
-    sudo pacman -S --noconfirm bottles
+    yay -S --noconfirm bottles
   fi
 
   echo "🌐 Fetching latest GE-Proton release..."

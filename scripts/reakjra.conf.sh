@@ -224,7 +224,7 @@ mount_drives_section() {
 
 
 
-
+# Add lutris! 
 ##################################### 🌸 INSTALL STEAM, BOTTLES AND GE-PROTON
 install_gaming_section() {
   echo ""

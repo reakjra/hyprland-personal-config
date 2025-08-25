@@ -293,7 +293,6 @@ install_gaming_monitoring_tools() {
   read -p "📊 Do you want to install MangoHud and vkBasalt with custom configs? (y/n): " confirm
   [[ "$confirm" != "y" ]] && return
 
-  # Install MangoHud
   if command -v mangohud &>/dev/null; then
     echo "✅ MangoHud is already installed."
   else
@@ -301,7 +300,6 @@ install_gaming_monitoring_tools() {
     sudo pacman -S --noconfirm mangohud
   fi
 
-  # Install vkBasalt
   if command -v vkBasalt &>/dev/null; then
     echo "✅ vkBasalt is already installed."
   else
@@ -309,22 +307,25 @@ install_gaming_monitoring_tools() {
     yay -S --noconfirm vkbasalt
   fi
 
-  # Ask for MangoHud config type
   mkdir -p ~/.config/MangoHud
-  mango_conf=~/.config/MangoHud/MangoHud.conf
+  mango_dir="$HOME/.config/MangoHud"
+  mango_conf="$mango_dir/MangoHud.conf"
 
   if [[ -f "$mango_conf" ]]; then
-    echo "⚠️  MangoHud config already exists, skipping creation."
-  else
     echo ""
-    echo "🛠️  Choose MangoHud config type:"
-    echo "1) Minimal"
-    echo "2) Full"
-    read -p "Enter your choice (1/2): " config_choice
+    echo "⚠️ MangoHud config already exists."
+  fi
 
-    if [[ "$config_choice" == "1" ]]; then
-      echo "📝 Creating Minimal MangoHud config..."
-      cat <<EOF >"$mango_conf"
+  echo ""
+  echo "🛠️ Choose MangoHud config type:"
+  echo "1) Minimal"
+  echo "2) Full"
+  echo "3) Dynamic (switch between Minimal/Full)"
+  read -p "Enter your choice (1/2/3): " config_choice
+
+  if [[ "$config_choice" == "1" ]]; then
+    echo "📝 Creating Minimal MangoHud config..."
+    cat <<'EOF' >"$mango_conf"
 # Appearance
 engine_version=0
 position=top-center
@@ -342,7 +343,7 @@ gpu_temp=1
 
 # Custom Layout
 text_layout=top-center
-text=\$fps | \$gpu_temp
+text=$fps | $gpu_temp
 
 gpu_list=0
 
@@ -358,9 +359,10 @@ gpu_core_clock=0
 gpu_mem_clock=0
 gpu_power=0
 EOF
-    else
-      echo "📝 Creating Full MangoHud config..."
-      cat <<EOF >"$mango_conf"
+    echo "✅ MangoHud config created."
+  elif [[ "$config_choice" == "2" ]]; then
+    echo "📝 Creating Full MangoHud config..."
+    cat <<'EOF' >"$mango_conf"
 # General Display Settings
 position=top-left
 font_size=24
@@ -375,8 +377,6 @@ engine_color=FF00FF
 # Performance Metrics
 fps
 frame_timing
-time
-time_format=%H:%M:%S
 ram
 vram
 cpu_stats
@@ -389,42 +389,172 @@ gpu_power
 
 # Layout
 hud_layout=
-\${cpu_stats} CPU: \${cpu_temp}C (\${cpu_power}W)
-\${core_freq}
-\${gpu_stats} GPU: \${gpu_temp}C (\${gpu_power}W) Fan: \${gpu_fan}
-\${gpu_core_clock} / \${gpu_mem_clock}
-FPS: \${fps}
-\${frame_timing}
-RAM: \${ram} / VRAM: \${vram}
+${cpu_stats} CPU: ${cpu_temp}C (${cpu_power}W)
+${core_freq}
+${gpu_stats} GPU: ${gpu_temp}C (${gpu_power}W) Fan: ${gpu_fan}
+${gpu_core_clock} / ${gpu_mem_clock}
+FPS: ${fps}
+${frame_timing}
+RAM: ${ram} / VRAM: ${vram}
 EOF
-    fi
     echo "✅ MangoHud config created."
+  else
+    echo "📝 Creating Dynamic MangoHud profiles..."
+    minimal_path="$mango_dir/mangohud-minimal.conf"
+    full_path="$mango_dir/mangohud-full.conf"
+    cat <<'EOF' >"$full_path"
+# General Display Settings
+position=top-left
+font_size=24
+alpha=0.9
+background_alpha=0.5
+text_color=FFFFFF
+gpu_color=00FF00
+cpu_color=00FFFF
+frametime_color=FFFF00
+engine_color=FF00FF
+
+# Performance Metrics
+fps
+frame_timing
+ram
+vram
+cpu_stats
+cpu_temp
+gpu_stats
+gpu_temp
+gpu_core_clock
+gpu_mem_clock
+gpu_power
+
+# Layout
+hud_layout=
+${cpu_stats} CPU: ${cpu_temp}C (${cpu_power}W)
+${core_freq}
+${gpu_stats} GPU: ${gpu_temp}C (${gpu_power}W) Fan: ${gpu_fan}
+${gpu_core_clock} / ${gpu_mem_clock}
+FPS: ${fps}
+${frame_timing}
+RAM: ${ram} / VRAM: ${vram}
+
+reload_cfg=Shift_R+F10
+EOF
+    cat <<'EOF' >"$minimal_path"
+legacy_layout=false
+
+horizontal
+background_alpha=0.0
+round_corners=10
+background_color=000000
+background_alpha=0.0
+
+font_size=14
+text_color=FFFFFF
+position=top-left
+
+hud_compact
+pci_dev=0:03:00.0
+table_columns=1
+gpu_text=G
+gpu_stats
+gpu_temp
+gpu_color=2E9762
+cpu_text=c
+cpu_stats
+
+frametime=0
+
+cpu_temp
+cpu_color=2E97CB
+fps
+fps_limit_method=late
+toggle_fps_limit=Shift_L+F1
+
+fps_limit=0
+#offset=0
+
+
+output_folder=/home/reakjra/
+log_duration=30
+autostart_log=0
+blacklist=protonplus,lsfg-vk-ui,bazzar,gnome-calculator,pamac-manager,lact,ghb,bitwig-studio,ptyxis,yumex
+log_interval=100
+toggle_logging=Shift_L+F2
+reload_cfg=Shift_R+F10
+EOF
+    ln -s ~/.config/MangoHud/mangohud-minimal.conf ~/.config/MangoHud/MangoHud.conf 2>/dev/null || ln -sfn "$minimal_path" "$mango_conf"
+    switcher="$mango_dir/switch_mangohud.sh"
+    cat <<'EOF' >"$switcher"
+#!/bin/bash
+set -euo pipefail
+CONFIG_DIR="$HOME/.config/MangoHud"
+ACTIVE="$CONFIG_DIR/MangoHud.conf"
+MINIMAL="$CONFIG_DIR/mangohud-minimal.conf"
+FULL="$CONFIG_DIR/mangohud-full.conf"
+CURRENT=$(readlink "$ACTIVE" || true)
+if [[ "$CURRENT" == "$MINIMAL" ]]; then
+    ln -sfn "$FULL" "$ACTIVE"
+    notify-send "MangoHud" "✨ Config: FULL"
+else
+    ln -sfn "$MINIMAL" "$ACTIVE"
+    notify-send "MangoHud" "🌙 Config: MINIMAL"
+fi
+EOF
+    chmod +x "$switcher"
+    echo "✅ Dynamic profiles created. Default is MINIMAL."
+    echo ""
+    read -p "⛓️ Do you want to add a Hyprland shortcut to toggle configs? (y/n): " add_key
+    echo ""
+    if [[ "$add_key" == "y" ]]; then
+      kb_line='bindn = RSHIFT, F10, exec, ~/.config/MangoHud/switch_mangohud.sh # MangoHud layout switch'
+      target=""
+      file1="$HOME/.config/hypr/custom/keybinds.conf"
+      file2="$HOME/.config/hypr/userprefs.conf"
+      file3="$HOME/.config/hypr/hyprland.conf"
+      if [[ -f "$file1" ]]; then
+        target="$file1"
+        echo "Found End-4 dotfiles. Using $target"
+      elif [[ -f "$file2" ]]; then
+        target="$file2"
+        echo "Found HyDE dotfiles. Using $target"
+      else
+        target="$file3"
+        mkdir -p "$(dirname "$target")"
+        [[ -f "$target" ]] || touch "$target"
+        echo "Using default Hyprland config at $target"
+      fi
+      if grep -Fqx "$kb_line" "$target"; then
+        echo "Keybind already present."
+        echo ""
+      else
+        { echo ""; echo "$kb_line"; } >> "$target"
+        echo ""
+        echo "✅ Keybind added to $target"
+        echo ""
+      fi
+    fi
   fi
 
-  # vkBasalt config
   mkdir -p ~/.config/vkBasalt
   vk_conf=~/.config/vkBasalt/vkBasalt.conf
   if [[ -f "$vk_conf" ]]; then
-    echo "⚠️  vkBasalt config already exists, skipping creation."
+    echo "⚠️ vkBasalt config already exists, skipping creation."
   else
     echo "📝 Creating vkBasalt config..."
-    cat <<EOF >"$vk_conf"
+    cat <<'EOF' >"$vk_conf"
 # vkBasalt configuration file
-
 effects = cas
-
-# Effect Settings
 cas = 0.1
-
-# Toggle key
 toggleKey = 59
 EOF
     echo "✅ vkBasalt config created."
   fi
 
-  echo -e "${GREEN}🎉 Monitoring tools installed and configured!${RESET}"
+  echo ""
+  echo -e "${GREEN}🎉 MangoHUD and vkBasalt installed and configured!${RESET}"
   pause
 }
+
 
 ##################################### 🌸 Install Discord with fix
 install_discord_with_fix() {

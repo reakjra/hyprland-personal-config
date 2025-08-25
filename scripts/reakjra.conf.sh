@@ -100,16 +100,10 @@ mount_drives_section() {
     [[ "${#INDEXED_PARTS[@]}" -eq 0 ]] && echo "🚫 No usable partitions found." && return
 
     echo ""
-    echo -e "${RED}🌸 This uses ntfs-3g to mount the drives. ${RESET}"
-    echo -e "${RED}🌸 Keep in mind the partitions name are subject to change due the boot order.${RESET}"
+    echo -e "${RED}🌸 This uses the kernel driver 'ntfs3' to mount NTFS partitions. ${RESET}"
+    echo -e "${RED}🌸 Keep in mind partition names can change due to boot order.${RESET}"
     echo ""
     read -p "👉 Enter the partition numbers to mount (e.g. 1,3,4): " selections
-
-    # Make sure ntfs-3g is installed
-    if ! command -v ntfs-3g &> /dev/null; then
-        echo "📦 'ntfs-3g' not found. Installing it..."
-        sudo pacman -S --noconfirm ntfs-3g
-    fi
 
     IFS=',' read -ra SELECTED <<< "$selections"
     for sel in "${SELECTED[@]}"; do
@@ -122,27 +116,54 @@ mount_drives_section() {
         echo ""
         [[ -n "$mountpoint" ]] && echo "" && echo "⚠️ $name is already mounted at $mountpoint. Skipping." && continue
         echo ""
-        
+
         read -p "🆔 Enter a custom mount name for $name (leave empty to use '$name'): " custom_name
         mount_name="${custom_name:-$name}"
-        mount_dir="/mnt/$mount_name"  
-
-        
+        mount_dir="/mnt/$mount_name"
 
         echo "🔗 Mounting $name to $mount_dir..."
         sudo mkdir -p "$mount_dir"
 
-       
         if [[ "$fstype" == "ntfs" ]]; then
-            sudo mount -t ntfs-3g "$dev" "$mount_dir" -o uid=$(id -u),gid=$(id -g)
+            # Runtime mount with current user's uid/gid (same as your original behavior)
+            if ! sudo mount -t ntfs3 -o uid=$(id -u),gid=$(id -g) "$dev" "$mount_dir"; then
+                echo "❌ Mount failed for $name."
+                echo "ℹ️  Checking kernel log (last lines):"
+                sudo dmesg | tail -n 50
+                echo ""
+                echo "👉 If you see 'volume is dirty' or 'hibernated', boot into Windows and run:"
+                echo "   chkdsk /f on the corresponding drive letter, then fully shut down (not reboot)."
+                echo "   Also consider disabling Fast Startup."
+                continue
+            fi
         else
-            sudo mount "$dev" "$mount_dir"
+            if ! sudo mount "$dev" "$mount_dir"; then
+                echo "❌ Mount failed for $name."
+                sudo dmesg | tail -n 50
+                continue
+            fi
         fi
 
         echo ""
         read -p "📝 Add $name to /etc/fstab for auto-mount on boot? (y/n): " add_fstab
         if [[ "$add_fstab" == "y" ]]; then
-           echo "UUID=${uuid} /mnt/${mount_name} ntfs-3g defaults,uid=1000,gid=1000,rw,user,exec,umask=000 0 0" | sudo tee -a /etc/fstab > /dev/null
+            if [[ "$fstype" == "ntfs" ]]; then
+                echo ""
+                echo "Choose ownership mode for fstab entry:"
+                echo "  1) User (current UID/GID, readable by others)  -> uid=\$(id -u),gid=\$(id -g),umask=022"
+                echo "  2) Root (world-writable for everyone)          -> umask=000"
+                read -p "👉 Enter 1 or 2: " own_choice
+
+                if [[ "$own_choice" == "2" ]]; then
+                    echo "UUID=${uuid} /mnt/${mount_name} ntfs3 defaults,rw,user,exec,umask=000 0 0" | sudo tee -a /etc/fstab > /dev/null
+                else
+                    uid_now=$(id -u)
+                    gid_now=$(id -g)
+                    echo "UUID=${uuid} /mnt/${mount_name} ntfs3 defaults,uid=${uid_now},gid=${gid_now},rw,user,exec,umask=022 0 0" | sudo tee -a /etc/fstab > /dev/null
+                fi
+            else
+                echo "UUID=${uuid} /mnt/${mount_name} ${fstype} defaults 0 0" | sudo tee -a /etc/fstab > /dev/null
+            fi
             echo ""
             echo "✅ Added to /etc/fstab"
         fi
@@ -152,6 +173,7 @@ mount_drives_section() {
     echo "🌹 Partition mounting section completed!"
     pause
 }
+
 
 
 

@@ -174,7 +174,6 @@ mount_drives_section() {
 
                     case "$conflict_choice" in
                         r|R)
-                            # Replace every matching line with our new_line
                             sudo sed -i "\|UUID=${uuid}|c ${new_line}" /etc/fstab
                             echo "✅ Replaced existing entry(ies) for UUID ${uuid}."
                             ;;

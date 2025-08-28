@@ -1,12 +1,16 @@
 #!/bin/bash
 
-# Pretty colors
+# Pretty colors & format
 GREEN="\e[32m"
 RED="\e[31m"
+BLUE='\e[34m'
 CYAN="\e[36m"
 YELLOW="\e[33m"
 PINK="\e[38m"
 RESET="\e[0m"
+BOLD='\e[1m'
+DIM='\e[2m'
+
 
 LOG_DIR="$HOME/reakjra-CC-logs"
 
@@ -36,7 +40,7 @@ main_menu() {
   echo "13. ❌ Exit"
   echo ""
 
-  read -p "👉 Select an option (1-10): " choice
+  read -p "👉 Select an option (1-13): " choice
   case $choice in
   1) mount_drives_section ;;
   2) fix_dualboot_time ;;
@@ -224,7 +228,7 @@ mount_drives_section() {
 
 
 
-# Add lutris! 
+
 ##################################### 🌸 INSTALL STEAM, BOTTLES AND GE-PROTON
 install_gaming_section() {
   echo ""
@@ -376,6 +380,8 @@ engine_color=FF00FF
 # Performance Metrics
 fps
 frame_timing
+time
+time_format=%H:%M:%S
 ram
 vram
 cpu_stats
@@ -1177,7 +1183,8 @@ cleaner_menu() {
     echo "6. 🧼 Delete leftover files from a package"
     echo "7. ♻️ Restore deleted files (from Trash)"
     echo "8. ♻️ Restore removed orphan packages"
-    echo "9. ❌ Back to main menu"
+    echo "9. 🎮 Clean steam prefixes (compatdata)"
+    echo "10. ❌ Back to main menu"
     echo ""
     echo ""
     echo -e "${RED} 🌸 Careful! This tool is not completely safe, you might end up removing important files! ${RESET}"
@@ -1194,7 +1201,8 @@ cleaner_menu() {
     6) clean_package_traces ;;
     7) restore_deleted_files ;;
     8) restore_orphans ;;
-    9) break ;;
+    9) cleaner_steam_prefixes_menu ;;
+    10) break ;;
     *)
       echo "❌ Invalid choice."
       pause
@@ -1405,6 +1413,150 @@ restore_orphans() {
     done <"$logfile"
   done
   pause
+}
+
+#####################################
+cleaner_steam_prefixes_menu() {
+  command -v du >/dev/null || { printf "%s\n" "'du' is missing."; return; }
+  command -v findmnt >/dev/null || { printf "%s\n" "'findmnt' is missing."; return; }
+  command -v awk >/dev/null || { printf "%s\n" "'awk' is missing."; return; }
+
+  local HAVE_CURL=0 HAVE_JQ=0 HAVE_NUMFMT=0
+  command -v curl >/dev/null && HAVE_CURL=1
+  command -v jq   >/dev/null && HAVE_JQ=1
+  command -v numfmt >/dev/null && HAVE_NUMFMT=
+  # are these checks even needed at this point...?
+
+  clear
+  printf "%b\n" "${RED}🌸 ${BOLD}Steam Proton prefixes — compatdata${RESET} ${RED}🌸${RESET}"
+  printf "%b\n\n" "${DIM}Scanning all mounted partitions for SteamLibrary/steamapps/compatdata/<appid>${RESET}"
+
+  local -a LIB_PATHS=()
+  declare -A SEEN_LIB
+  while IFS= read -r mp; do
+    while IFS= read -r lib; do
+      [[ -n "${SEEN_LIB[$lib]}" ]] && continue
+      SEEN_LIB[$lib]=1
+      LIB_PATHS+=("$lib")
+    done < <(find "$mp" -maxdepth 3 -type d -name SteamLibrary 2>/dev/null)
+  done < <(findmnt -rn -o TARGET)
+
+  if ((${#LIB_PATHS[@]}==0)); then
+    printf "%s\n" "No 'SteamLibrary' folders found."
+    read -rp "Press Enter to go back... " _
+    return
+  fi
+
+  human() { if ((HAVE_NUMFMT)); then numfmt --to=iec --suffix=B "$1" 2>/dev/null || printf "%sB" "$1"; else printf "%sB" "$1"; fi; }
+  is_tool_like_name() { local nm="${1,,}"; [[ "$nm" =~ ^proton ]] && return 0; [[ "$nm" == *"runtime"* ]] && return 0; [[ "$nm" == *"compatibility tool"* ]] && return 0; return 1; }
+  ellipsize() { local s="$1" w="${2:-40}"; (( ${#s} > w )) && printf "%s…" "${s:0:w-1}" || printf "%s" "$s"; }
+  strip_symbols() { local s="$1"; s="${s//™/}"; s="${s//®/}"; s="${s//©/}"; s="${s//℠/}"; printf "%s" "$s"; }
+
+  local -a IDX_PATH IDX_LABEL IDX_BYTES
+  local idx=0
+  local NAME_W=40
+  local ID_W=8
+
+  for lib in "${LIB_PATHS[@]}"; do
+    local steamapps="$lib/steamapps"
+    local compat="$steamapps/compatdata"
+    [[ -d "$compat" ]] || continue
+
+    local compat_total_h; compat_total_h=$(du -sh --apparent-size "$compat" 2>/dev/null | cut -f1)
+    printf "%b\n" "${BLUE}🌸 ${lib} - [${compat_total_h}]${RESET}"
+
+    shopt -s nullglob
+    local -a LINES=()
+    local d
+    for d in "$compat"/*; do
+      [[ -d "$d" ]] || continue
+      local appid; appid=$(basename "$d")
+      [[ "$appid" =~ ^[0-9]+$ ]] || continue
+
+      local size_b size_h
+      size_b=$(du -sb --apparent-size "$d" 2>/dev/null | cut -f1)
+      size_h=$(du -sh --apparent-size "$d" 2>/dev/null | cut -f1)
+
+      local name=""
+      local manifest="$steamapps/appmanifest_${appid}.acf"
+      if [[ -f "$manifest" ]]; then
+        name=$(awk -F'"' '/"name"[[:space:]]*"/{print $4; exit}' "$manifest")
+      fi
+      local api_type=""
+      if [[ -z "$name" && $HAVE_CURL -eq 1 && $HAVE_JQ -eq 1 ]]; then
+        local json; json=$(curl -s "https://store.steampowered.com/api/appdetails?appids=${appid}&l=en")
+        name=$(jq -r ".\"$appid\".data.name // empty" <<<"$json")
+        api_type=$(jq -r ".\"$appid\".data.type // empty" <<<"$json")
+      fi
+      [[ -z "$name" ]] && name="Unknown app"
+      [[ -n "$api_type" && "$api_type" != "game" ]] && continue
+      is_tool_like_name "$name" && continue
+
+      LINES+=("${size_b}"$'\t'"${name}"$'\t'"${appid}"$'\t'"${size_h}"$'\t'"${d}")
+    done
+    shopt -u nullglob
+
+    if ((${#LINES[@]})); then
+      while IFS=$'\t' read -r sb nm aid shh path; do
+        local nm_disp; nm_disp=$(strip_symbols "$nm")
+        local nm_show; nm_show=$(ellipsize "$nm_disp" "$NAME_W")
+        local gap=$(( ID_W - ${#aid} ))
+        (( gap < 0 )) && gap=0
+        printf " %3d. %-*s (%s)%*s[%s]\n" \
+          "$((idx+1))" "$NAME_W" "$nm_show" "$aid" "$gap" " " "$shh"
+        IDX_PATH[$idx]="$path"
+        IDX_LABEL[$idx]="$nm ($aid)"
+        IDX_BYTES[$idx]="$sb"
+        ((idx++))
+      done < <(printf "%s\n" "${LINES[@]}" | sort -t $'\t' -k1,1nr)
+    fi
+
+    printf "\n"
+  done
+
+  ((idx==0)) && { printf "No game prefixes found.\n"; read -rp "Press Enter... " _; return; }
+
+  printf "%s\n" "Select prefixes to delete (e.g: 1,4) — leave empty to cancel:"
+  read -rp "👉 Choice: " sel
+  [[ -z "$sel" ]] && return
+
+  declare -A MARK
+  IFS=',' read -r -a parts <<<"$sel"
+  local p
+  for p in "${parts[@]}"; do
+    if [[ "$p" =~ ^[0-9]+-[0-9]+$ ]]; then
+      local a=${p%-*} b=${p#*-}
+      ((a<1)) && a=1; ((b>idx)) && b=$idx
+      local i; for ((i=a;i<=b;i++)); do MARK[$((i-1))]=1; done
+    elif [[ "$p" =~ ^[0-9]+$ ]]; then
+      ((p>=1 && p<=idx)) && MARK[$((p-1))]=1
+    fi
+  done
+
+  local total=0
+  local -a victims=()
+  local i
+  printf "%s\n" "You are about to delete:"
+  for i in "${!MARK[@]}"; do
+    victims+=("$i")
+    (( total += ${IDX_BYTES[$i]} ))
+    printf "  - %s [%s]\n" "${IDX_LABEL[$i]}" "$(human ${IDX_BYTES[$i]})"
+  done
+
+  ((${#victims[@]}==0)) && { printf "No valid entries.\n"; read -rp "Press Enter... " _; return; }
+
+  local total_h; total_h=$(human "$total")
+  read -rp "❗ Confirm deletion of ${#victims[@]} prefix(es) (~$total_h freed)? [y/N]: " ok
+  [[ "$ok" != "y" ]] && { printf "Cancelled.\n"; read -rp "Press Enter... " _; return; }
+
+  local fail=0
+  for i in "${victims[@]}"; do
+    local p="${IDX_PATH[$i]}"
+    [[ -n "$p" && -d "$p" && "$p" != "/" ]] && rm -rf --one-file-system "$p" || fail=1
+  done
+
+  ((fail==0)) && printf "Done. Freed ~%s\n" "$total_h" || printf "Some dirs not removed.\n"
+  read -rp "Press Enter to go back... " _
 }
 
 ##################################### NVIDIA RELATED
@@ -1643,6 +1795,5 @@ install_zen_kernel_nvidia() {
 while true; do
   main_menu
 done
-
 
 

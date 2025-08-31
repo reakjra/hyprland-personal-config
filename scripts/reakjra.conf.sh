@@ -1,6 +1,8 @@
 #!/bin/bash
 
-#TODO: default package installer: Gwenview, mpv, Ark, Kate | Flatpak
+#TODO: default package installer: Gwenview, mpv, Ark, Kate | Flatpak, Warehouse
+#TODO: AMD menu (zen kernel + drivers/utils + ollama-rocm + LACT)
+
 
 # Pretty colors & format
 GREEN="\e[32m"

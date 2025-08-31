@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#TODO: default package installer: Gwenview, mpv, Ark, Kate
+
 # Pretty colors & format
 GREEN="\e[32m"
 RED="\e[31m"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#TODO: default package installer: Gwenview, mpv, Ark, Kate
+#TODO: default package installer: Gwenview, mpv, Ark, Kate | Flatpak
 
 # Pretty colors & format
 GREEN="\e[32m"

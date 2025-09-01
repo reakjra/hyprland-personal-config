@@ -1,8 +1,9 @@
 #!/bin/bash
 
-#TODO: default package installer: Gwenview, mpv, Ark, Kate | Flatpak, Warehouse
-#TODO: AMD menu (zen kernel + drivers/utils + ollama-rocm + LACT)
-
+#TODO: default packages installer: Gwenview, mpv, Ark, Kate | Flatpak, Warehouse // useful for more minimalist Hyprland rices
+#TODO: AMD menu (zen kernel + drivers/utils + ollama-rocm + LACT) 
+#TODO: Edit "Steam And Bottles" code, add confirms on installation and add Lutris + fetch every GE-Proton version and let the user choose what versions to install and use. 
+#TODO: Make this code with easily customizable values (e.s. nvidia's PL, GPU fans, etc.) from the top of this file. | Definetely never gonna make it.
 
 # Pretty colors & format
 GREEN="\e[32m"
@@ -15,8 +16,8 @@ RESET="\e[0m"
 BOLD='\e[1m'
 DIM='\e[2m'
 
-
 LOG_DIR="$HOME/reakjra-CC-logs"
+
 
 pause() {
   echo ""

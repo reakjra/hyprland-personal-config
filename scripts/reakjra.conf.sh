@@ -1,8 +1,7 @@
 #!/bin/bash
 
 #TODO: default packages installer: Gwenview, mpv, Ark, Kate | Flatpak, Warehouse // useful for more minimalist Hyprland rices
-#TODO: AMD menu (zen kernel + drivers/utils + ollama-rocm + LACT) 
-#TODO: Edit "Steam And Bottles" code, add confirms on installation and add Lutris + fetch every GE-Proton version and let the user choose what versions to install and use. 
+#TODO: AMD menu (zen kernel + drivers/utils + ollama-rocm + LACT)
 #TODO: Make this code with easily customizable values (e.s. nvidia's PL, GPU fans, etc.) from the top of this file. | Definetely never gonna make it.
 
 # Pretty colors & format
@@ -234,55 +233,232 @@ mount_drives_section() {
 
 
 
-##################################### 🌸 INSTALL STEAM, BOTTLES AND GE-PROTON
+##################################### 🌸 INSTALL STEAM, BOTTLES, LUTRIS AND GE-PROTON
 install_gaming_section() {
   echo ""
-  read -p "🎮 Do you want to install Steam, Bottles and GE-Proton? (y/n): " confirm
-  [[ "$confirm" != "y" ]] && return
 
-  echo "🔍 Checking for installed components..."
+  while true; do
+    read -p "🌸 Install Steam? (y/n): " a
+    case "$a" in
+      [yY])
+        if command -v steam &>/dev/null; then
+          echo -e "${GREEN}🌸 Steam is already installed.${RESET}"
+        else
+          echo "🌸 Installing Steam..."
+          sudo pacman -S --noconfirm steam
+        fi
+        break ;;
+      [nN]) echo "🌸 Skipping Steam."; break ;;
+      *) echo -e "${YELLOW}🌸 Please enter y/n.${RESET}" ;;
+    esac
+  done
 
-  # Check Steam
-  if command -v steam &>/dev/null; then
-    echo "✅ Steam is already installed."
-  else
-    echo "📦 Installing Steam..."
-    sudo pacman -S --noconfirm steam
-  fi
+  echo ""
 
-  # Check Bottles
-  if command -v bottles &>/dev/null; then
-    echo "✅ Bottles is already installed."
-  else
-    echo "📦 Installing Bottles..."
-    yay -S --noconfirm bottles
-  fi
+  while true; do
+    read -p "🌸 Install Bottles (AUR)? (y/n): " b
+    case "$b" in
+      [yY])
+        if command -v bottles &>/dev/null; then
+          echo -e "${GREEN}🌸 Bottles is already installed.${RESET}"
+        else
+          echo "🌸 Installing Bottles (yay)..."
+          yay -S --noconfirm bottles
+        fi
+        break ;;
+      [nN]) echo "🌸 Skipping Bottles."; break ;;
+      *) echo -e "${YELLOW}🌸 Please enter y/n.${RESET}" ;;
+    esac
+  done
 
-  echo "🌐 Fetching latest GE-Proton release..."
+  echo ""
 
-  mkdir -p ~/.local/share/Steam/compatibilitytools.d
-  mkdir -p ~/.local/share/bottles/runners
+  while true; do
+    read -p "🌸 Install Lutris? (y/n): " l
+    case "$l" in
+      [yY])
+        if command -v lutris &>/dev/null; then
+          echo -e "${GREEN}🌸 Lutris is already installed.${RESET}"
+        else
+          echo "🌸 Installing Lutris..."
+          sudo pacman -S --noconfirm lutris
+        fi
+        break ;;
+      [nN]) echo "🌸 Skipping Lutris."; break ;;
+      *) echo -e "${YELLOW}🌸 Please enter y/n.${RESET}" ;;
+    esac
+  done
 
-  latest_url=$(curl -s https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest |
-    grep "browser_download_url" | grep ".tar.gz" | cut -d '"' -f 4 | head -n 1)
+  echo ""
 
-  [[ -z "$latest_url" ]] && echo -e "${RED}❌ Could not fetch GE-Proton URL.${RESET}" && return
+  while true; do
+    read -p "🌸 Download GE-Proton? (y/n): " g
+    case "$g" in
+      [yY])
+        for dep in curl jq wget tar; do
+          if ! command -v "$dep" &>/dev/null; then
+            echo "🌸 Installing dependency: $dep"
+            sudo pacman -S --noconfirm "$dep"
+          fi
+        done
 
-  echo "⬇️  Downloading from $latest_url"
-  wget "$latest_url" -P /tmp
-  tarball_name=$(basename "$latest_url")
-  ge_dir="${tarball_name%.tar.gz}"
+        mkdir -p "$HOME/.local/share/Steam/compatibilitytools.d"
+        mkdir -p "$HOME/.local/share/bottles/runners"
 
-  echo "📦 Extracting $tarball_name..."
-  tar -xvf "/tmp/$tarball_name" -C /tmp
+        local roll
+        roll=$(ge_pick_roll_menu) || { echo -e "${RED}🌸 Canceled.${RESET}"; return; }
 
-  echo "📁 Copying GE-Proton to Steam and Bottles directories..."
-  cp -r "/tmp/$ge_dir" ~/.local/share/Steam/compatibilitytools.d/
-  cp -r "/tmp/$ge_dir" ~/.local/share/bottles/runners/
+        echo ""
 
-  echo -e "${GREEN}✅ GE-Proton installed successfully!${RESET}"
-  pause
+        local name url
+        read name url < <(ge_pick_version_in_roll "$roll") || { echo -e "${RED}🌸 No version selected.${RESET}"; return; }
+
+        echo ""
+        echo "🌸 Downloading $name ..."
+        local tmp_tar="/tmp/${name}.tar.gz"
+        wget -O "$tmp_tar" "$url" || { echo -e "${RED}🌸 Download failed.${RESET}"; return; }
+
+        echo "🌸 Extracting $name ..."
+        local topdir
+        topdir=$(tar -tzf "$tmp_tar" | head -1 | cut -d/ -f1)
+        rm -rf "/tmp/$topdir"
+        tar -xzf "$tmp_tar" -C /tmp >/dev/null
+
+        echo ""
+        echo "🌸 Where to install $name?"
+        echo "1) Steam"
+        echo "2) Bottles"
+        echo "3) Both"
+        read -p "Choose (1/2/3): " dest
+        case "$dest" in
+          1) cp -r "/tmp/$topdir" "$HOME/.local/share/Steam/compatibilitytools.d/$name"
+             echo -e "${GREEN}🌸 Installed to Steam.${RESET}" ;;
+          2) cp -r "/tmp/$topdir" "$HOME/.local/share/bottles/runners/$name"
+             echo -e "${GREEN}🌸 Installed to Bottles.${RESET}" ;;
+          3) cp -r "/tmp/$topdir" "$HOME/.local/share/Steam/compatibilitytools.d/$name"
+             cp -r "/tmp/$topdir" "$HOME/.local/share/bottles/runners/$name"
+             echo -e "${GREEN}🌸 Installed to both.${RESET}" ;;
+          *) cp -r "/tmp/$topdir" "$HOME/.local/share/Steam/compatibilitytools.d/$name"
+             cp -r "/tmp/$topdir" "$HOME/.local/share/bottles/runners/$name"
+             echo -e "${YELLOW}🌸 Invalid choice; installed to both.${RESET}" ;;
+        esac
+
+        echo -e "${GREEN}🌸 GE-Proton ($name) installed.${RESET}"
+        return
+        ;;
+      [nN]) echo "🌸 Skipping GE-Proton."; return ;;
+      *) echo -e "${YELLOW}🌸 Please enter y/n.${RESET}" ;;
+    esac
+  done
 }
+
+_print_3col_menu() {
+  mapfile -t ITEMS
+  local total=${#ITEMS[@]}
+  (( total == 0 )) && return 1
+  local start_index="${1:-1}"
+  local col_size=10
+  local col_count=3
+  local rows=$(( (total + col_count - 1) / col_count ))
+  local r c idx
+  for ((r=0;r<rows;r++)); do
+    local line=""
+    for ((c=0;c<col_count;c++)); do
+      idx=$(( r + c*rows ))
+      if (( idx < total )); then
+        local disp=$(( start_index + idx ))
+        printf -v cell "%2d) %s" "$disp" "${ITEMS[$idx]}"
+        printf -v cell "%-38s" "$cell"
+        line+="$cell"
+      fi
+    done
+    [[ -n "$line" ]] && echo "$line" >&2
+  done
+}
+
+_ge_fetch_assets_json() {
+  local owner="GloriousEggroll"
+  local repo="proton-ge-custom"
+  local per_page=100
+  local page
+  for page in 1 2 3; do
+    local chunk
+    chunk=$(curl -s "https://api.github.com/repos/$owner/$repo/releases?per_page=$per_page&page=$page")
+    [[ -z "$chunk" ]] && break
+    echo "$chunk" | jq -c '.[] | .assets[]?
+      | { name: .name, url: .browser_download_url }'
+  done | jq -s '
+    map(
+      select(.name|test("^GE-Proton[0-9]+-[0-9]+(\\.[0-9]+)?(-[0-9]+)?\\.tar\\.gz$"))
+      | .name = (.name|sub("\\.tar\\.gz$"; ""))
+      | .maj = (.name | capture("^GE-Proton(?<m>[0-9]+)-").m)
+    )'
+}
+
+ge_pick_roll_menu() {
+  local assets rolls choice
+  assets=$(_ge_fetch_assets_json) || return 1
+  mapfile -t rolls < <(jq -r '.[].maj' <<<"$assets" | sort -rn | uniq)
+  (( ${#rolls[@]} == 0 )) && return 1
+  echo "🌸 Choose roll version:" >&2
+  local i=1
+  for r in "${rolls[@]}"; do
+    echo "$i) GE-Proton${r}-x" >&2
+    ((i++))
+  done
+  read -p "Select: " choice
+  if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#rolls[@]} )); then
+    echo -e "${YELLOW}🌸 Invalid selection.${RESET}" >&2
+    return 1
+  fi
+  echo "${rolls[$((choice-1))]}"
+}
+
+ge_pick_version_in_roll() {
+  local roll="$1"
+  [[ -z "$roll" ]] && return 1
+  local assets filtered total page_size=30 page=1
+  assets=$(_ge_fetch_assets_json) || return 1
+  mapfile -t filtered < <(jq -r --arg r "$roll" '.[] | select(.maj==$r) | "\(.name) \(.url)"' <<<"$assets")
+  total=${#filtered[@]}
+  (( total == 0 )) && return 1
+  while true; do
+    local start=$(( (page-1)*page_size ))
+    local end=$(( start + page_size ))
+    (( end > total )) && end=$total
+    local slice=("${filtered[@]:$start:$((end-start))}")
+    echo "🌸 Choose GE-Proton${roll}-x version:" >&2
+    printf "%s\n" "${slice[@]%% *}" | _print_3col_menu $(( start+1 ))
+    if (( total > page_size )); then
+      echo "" >&2
+      echo "Page $page of $(( (total + page_size - 1)/page_size ))" >&2
+      echo "n) Next page  p) Previous page" >&2
+    fi
+    echo "q) Cancel" >&2
+    read -p "Select: " sel
+    case "$sel" in
+      [qQ]) return 1 ;;
+      [nN])
+        if (( start + page_size < total )); then ((page++)); else echo -e "${YELLOW}🌸 No next page.${RESET}" >&2; fi
+        ;;
+      [pP])
+        if (( page > 1 )); then ((page--)); else echo -e "${YELLOW}🌸 No previous page.${RESET}" >&2; fi
+        ;;
+      *)
+        if [[ "$sel" =~ ^[0-9]+$ ]] && (( sel >= 1 && sel <= total )); then
+          local idx=$(( sel - 1 ))
+          local name="${filtered[$idx]%% *}"
+          local url="${filtered[$idx]#* }"
+          printf "%s %s\n" "$name" "$url"
+          return 0
+        else
+          echo -e "${YELLOW}🌸 Invalid selection.${RESET}" >&2
+        fi
+        ;;
+    esac
+  done
+}
+
 
 ##################################### 🌸  FIX DUAL BOOT TIME
 fix_dualboot_time() {
@@ -295,7 +471,7 @@ fix_dualboot_time() {
   pause
 }
 
-# 🌸  INSTALL MANGOHUD & VKBASALT WITH CUSTOM CONFIGS
+##################################### 🌸  INSTALL MANGOHUD & VKBASALT WITH CUSTOM CONFIGS
 install_gaming_monitoring_tools() {
   echo ""
   read -p "📊 Do you want to install MangoHud and vkBasalt with custom configs? (y/n): " confirm
@@ -371,41 +547,60 @@ EOF
   elif [[ "$config_choice" == "2" ]]; then
     echo "📝 Creating Full MangoHud config..."
     cat <<'EOF' >"$mango_conf"
-# General Display Settings
+
 position=top-left
-font_size=24
-alpha=0.9
-background_alpha=0.5
+alpha=1.0
+background_alpha=0.38
+background_color=0A0A0A
+round_corners=8
+text_outline=1
+font_size=22
 text_color=FFFFFF
 gpu_color=00FF00
 cpu_color=00FFFF
 frametime_color=FFFF00
-engine_color=FF00FF
 
-# Performance Metrics
+
+gpu_name
 fps
+fps_metrics=avg,0.01,0.001
+frametime
 frame_timing
-time
-time_format=%H:%M:%S
-ram
-vram
+
 cpu_stats
 cpu_temp
+cpu_power
+cpu_mhz
+
+gpu_list=1
 gpu_stats
 gpu_temp
+gpu_power
 gpu_core_clock
 gpu_mem_clock
-gpu_power
+gpu_fan
 
-# Layout
+ram
+vram
+engine_version
+vulkan_driver
+
+
+reload_cfg=Shift_R+F10
+
+legacy_layout=1
+
 hud_layout=
-${cpu_stats} CPU: ${cpu_temp}C (${cpu_power}W)
-${core_freq}
-${gpu_stats} GPU: ${gpu_temp}C (${gpu_power}W) Fan: ${gpu_fan}
-${gpu_core_clock} / ${gpu_mem_clock}
-FPS: ${fps}
+Drv: ${vulkan_driver}
+${gpu_name}
+GPU: ${gpu_stats}  ${gpu_temp}C  ${gpu_power}W  Fan:${gpu_fan}
+GPU Clk: ${gpu_core_clock}  Mem Clk: ${gpu_mem_clock}
+CPU: ${cpu_stats}  ${cpu_temp}C  ${cpu_power}W  ${cpu_mhz}MHz
+Mem: RAM ${ram}  VRAM ${vram}
+FPS: ${fps}  (avg/1%/0.1%)
 ${frame_timing}
-RAM: ${ram} / VRAM: ${vram}
+Frametime: ${frametime}
+Eng: ${engine_version}
 EOF
     echo "✅ MangoHud config created."
   else
@@ -413,41 +608,60 @@ EOF
     minimal_path="$mango_dir/mangohud-minimal.conf"
     full_path="$mango_dir/mangohud-full.conf"
     cat <<'EOF' >"$full_path"
-# General Display Settings
+
 position=top-left
-font_size=24
-alpha=0.9
-background_alpha=0.5
+alpha=1.0
+background_alpha=0.38
+background_color=0A0A0A
+round_corners=8
+text_outline=1
+font_size=22
 text_color=FFFFFF
 gpu_color=00FF00
 cpu_color=00FFFF
 frametime_color=FFFF00
-engine_color=FF00FF
 
-# Performance Metrics
+
+gpu_name
 fps
+fps_metrics=avg,0.01,0.001
+frametime
 frame_timing
-ram
-vram
+
 cpu_stats
 cpu_temp
+cpu_power
+cpu_mhz
+
+gpu_list=1
 gpu_stats
 gpu_temp
+gpu_power
 gpu_core_clock
 gpu_mem_clock
-gpu_power
+gpu_fan
 
-# Layout
-hud_layout=
-${cpu_stats} CPU: ${cpu_temp}C (${cpu_power}W)
-${core_freq}
-${gpu_stats} GPU: ${gpu_temp}C (${gpu_power}W) Fan: ${gpu_fan}
-${gpu_core_clock} / ${gpu_mem_clock}
-FPS: ${fps}
-${frame_timing}
-RAM: ${ram} / VRAM: ${vram}
+ram
+vram
+engine_version
+vulkan_driver
+
 
 reload_cfg=Shift_R+F10
+
+legacy_layout=1
+
+hud_layout=
+Drv: ${vulkan_driver}
+${gpu_name}
+GPU: ${gpu_stats}  ${gpu_temp}C  ${gpu_power}W  Fan:${gpu_fan}
+GPU Clk: ${gpu_core_clock}  Mem Clk: ${gpu_mem_clock}
+CPU: ${cpu_stats}  ${cpu_temp}C  ${cpu_power}W  ${cpu_mhz}MHz
+Mem: RAM ${ram}  VRAM ${vram}
+FPS: ${fps}  (avg/1%/0.1%)
+${frame_timing}
+Frametime: ${frametime}
+Eng: ${engine_version}
 EOF
     cat <<'EOF' >"$minimal_path"
 legacy_layout=false
@@ -727,7 +941,7 @@ install_gamemode_section() {
 
 #################################### 🌸 INSTALL ANI-CLI, AW-CLI & ANIME4K SHADERS | This is so bad written : fix!!!
 install_ani_aw_cli_section() {
- 
+
   echo ""
   echo "😊 Checking for mpv..."
 
@@ -1800,5 +2014,4 @@ install_zen_kernel_nvidia() {
 while true; do
   main_menu
 done
-
 

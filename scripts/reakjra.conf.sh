@@ -1,8 +1,53 @@
 #!/bin/bash
 
+##################################### 🌸 USER CONFIGURATION SECTION
+# Customize these values according to your preferences and system
+# Feel free to modify any values to match your setup! 💖
+
+# NVIDIA Configuration 🥚
+NVIDIA_POWER_LIMIT=150              # GPU power limit in watts (adjust for your GPU)
+NVIDIA_FAN_CURVE=(                  # Temperature:Speed pairs for custom fan curve (you'll need to change it through the nvidia fan curve script once done)
+    "40:30"  "50:40"  "60:50"  "70:65"  "75:70"  "80:75"  "90:100"
+)
+NVIDIA_FAN_IDS=("0" "1")           # Fan IDs to control (0 and 1 for dual-fan GPUs)
+NVIDIA_FAN_INTERVAL=5              # Fan control check interval in seconds
+
+# AMD Configuration 🔴
+AMD_POWER_PROFILE=1                # Power profile (0=3D_FULL_SCREEN, 1=BALANCED, 2=POWER_SAVING)
+
+# Hyprland Configuration Files 🌸
+# Specify which files to use for different types of configurations
+# You can use the same file for everything or split them as you prefer!
+HYPR_KEYBINDS="$HOME/.config/hypr/custom/keybinds.conf"             # For keybinds
+HYPR_WINDOWRULES="$HOME/.config/hypr/custom/rules.conf"             # For window rules
+HYPR_GENERAL="$HOME/.config/hypr/custom/general.conf"               # For general settings
+HYPR_ENV="$HOME/.config/hypr/custom/env.conf"                       # For environment variables
+HYPR_EXECS="$HOME/.config/hypr/custom/execs.conf"                   # For exec/exec-once commands
+
+# Package Management 📦
+AUR_HELPER="yay"                   # AUR helper to use (yay, paru, etc.)
+
+# Script Behavior ⚙️
+LOG_DIR="$HOME/reakjra-CC-logs"    # Directory for storing operation logs
+AUTO_BACKUP=false                  # Automatically backup config files before modifying | reccomended set to false to avoid useless backups
+DEFAULT_CONFIRM=true               # Default response for confirmations (true=yes, false=no)
+
+# Directories 📁
+CONFIG_BACKUP_DIR="$HOME/.config_backups" # Directory for config backups
+
+# Gaming Configuration 🎮
+GAMEMODE_GROUPS=("gamemode")       # Groups to add user to for gamemode access
+
+# GitHub Configuration for WM settings (This is for Reakjra's Hyprland config, do not touch) 🌐
+GITHUB_USERNAME="reakjra"          # GitHub username for configs
+GITHUB_REPO="hyprland-personal-config" # Repository name
+GITHUB_BRANCH="main"               # Branch to use
+
+##############################################################################
+
+
+
 #TODO: default packages installer: Gwenview, mpv, Ark, Kate | Flatpak, Warehouse // useful for more minimalist Hyprland rices
-#TODO: AMD menu (zen kernel + drivers/utils + ollama-rocm + LACT)
-#TODO: Make this code with easily customizable values (e.s. nvidia's PL, GPU fans, etc.) from the top of this file. | Definetely never gonna make it.
 
 # Pretty colors & format
 GREEN="\e[32m"
@@ -17,6 +62,281 @@ DIM='\e[2m'
 
 LOG_DIR="$HOME/reakjra-CC-logs"
 
+##################################### 🌸 UTILITY FUNCTIONS
+# Consistent UI/UX functions used throughout the script
+
+# Message functions with consistent styling
+msg_info() {
+    echo -e "ℹ️  $1"
+}
+
+msg_success() {
+    echo -e "${GREEN}✅ $1${RESET}"
+}
+
+msg_warning() {
+    echo -e "${YELLOW}⚠️  $1${RESET}"
+}
+
+msg_error() {
+    echo -e "${RED}❌ $1${RESET}"
+}
+
+msg_step() {
+    echo -e "\n🌸 $1"
+}
+
+msg_section() {
+    echo -e "\n🌸 ${RED}$1${RESET}"
+}
+
+# Confirmation functions
+confirm() {
+    local message="$1"
+    local default="${2:-$DEFAULT_CONFIRM}"
+    local prompt="[Y/n]"
+
+    [[ "$default" == false ]] && prompt="[y/N]"
+
+    while true; do
+        read -rp "❓ $message $prompt: " response
+        case "${response,,}" in
+            y|yes) return 0 ;;
+            n|no) return 1 ;;
+            "") [[ "$default" == true ]] && return 0 || return 1 ;;
+            *) msg_warning "Please enter y/n." ;;
+        esac
+    done
+}
+
+confirm_or_exit() {
+    if ! confirm "$1" "$2"; then
+        msg_info "Operation cancelled."
+        pause
+        return 1
+    fi
+}
+
+# Input functions
+get_input() {
+    local message="$1"
+    local default="$2"
+    local response
+
+    if [[ -n "$default" ]]; then
+        read -rp "👉 $message [$default]: " response
+        echo "${response:-$default}"
+    else
+        read -rp "👉 $message: " response
+        echo "$response"
+    fi
+}
+
+# Package management utilities
+check_package() {
+    local package="$1"
+    if command -v "$package" &>/dev/null || pacman -Q "$package" &>/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+install_package() {
+    local package="$1"
+    local method="${2:-pacman}"  # pacman, aur, or specific command
+
+    if check_package "$package"; then
+        msg_success "$package is already installed."
+        return 0
+    fi
+
+    msg_step "Installing $package..."
+    case "$method" in
+        pacman)
+            sudo pacman -S --needed --noconfirm "$package"
+            ;;
+        aur)
+            if ! command -v "$AUR_HELPER" &>/dev/null; then
+                msg_error "$AUR_HELPER is required for AUR packages. Please install it first."
+                return 1
+            fi
+            "$AUR_HELPER" -S --needed --noconfirm "$package"
+            ;;
+        *)
+            eval "$method"
+            ;;
+    esac
+
+    if [[ $? -eq 0 ]]; then
+        msg_success "$package installed successfully."
+        return 0
+    else
+        msg_error "Failed to install $package."
+        return 1
+    fi
+}
+
+install_packages() {
+    local method="$1"
+    shift
+    local packages=("$@")
+    local failed=()
+
+    for package in "${packages[@]}"; do
+        if ! install_package "$package" "$method"; then
+            failed+=("$package")
+        fi
+    done
+
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        msg_error "Failed to install: ${failed[*]}"
+        return 1
+    fi
+    return 0
+}
+
+# File management utilities
+backup_file() {
+    local file="$1"
+    local backup_dir="${2:-$CONFIG_BACKUP_DIR}"
+
+    if [[ ! -f "$file" ]]; then
+        return 0
+    fi
+
+    mkdir -p "$backup_dir"
+    local timestamp=$(date +"%Y%m%d-%H%M%S")
+    local backup_name="${file##*/}.${BACKUP_SUFFIX}-${timestamp}"
+    local backup_path="$backup_dir/$backup_name"
+
+    cp "$file" "$backup_path"
+    msg_success "Backup created: $backup_path"
+}
+
+# Hyprland configuration utilities
+add_to_hypr_config() {
+    local config_type="$1"  # keybinds, windowrules, general, env, execs
+    local content="$2"
+    local comment="$3"
+
+    local target_file
+    case "$config_type" in
+        keybinds) target_file="$HYPR_KEYBINDS" ;;
+        windowrules) target_file="$HYPR_WINDOWRULES" ;;
+        general) target_file="$HYPR_GENERAL" ;;
+        env) target_file="$HYPR_ENV" ;;
+        execs) target_file="$HYPR_EXECS" ;;
+        *)
+            msg_error "Invalid config type: $config_type"
+            return 1
+            ;;
+    esac
+
+    # Create directory if it doesn't exist
+    mkdir -p "$(dirname "$target_file")"
+
+    # Create file if it doesn't exist
+    [[ ! -f "$target_file" ]] && touch "$target_file"
+
+    # Backup if auto backup is enabled
+    [[ "$AUTO_BACKUP" == true ]] && backup_file "$target_file"
+
+    # Check if content already exists
+    if grep -Fxq "$content" "$target_file"; then
+        msg_success "Configuration already present in $target_file"
+        return 0
+    fi
+
+    # Add content with comment
+    {
+        echo ""
+        [[ -n "$comment" ]] && echo "# $comment"
+        echo "$content"
+    } >> "$target_file"
+
+    msg_success "Added to $target_file"
+}
+
+# Service management utilities
+manage_service() {
+    local action="$1"  # enable, disable, start, stop, enable-now
+    local service="$2"
+    local user_service="${3:-false}"
+
+    local systemctl_cmd="sudo systemctl"
+    [[ "$user_service" == true ]] && systemctl_cmd="systemctl --user"
+
+    msg_step "${action^}ing $service service..."
+
+    case "$action" in
+        enable-now)
+            $systemctl_cmd enable --now "$service"
+            ;;
+        *)
+            $systemctl_cmd "$action" "$service"
+            ;;
+    esac
+
+    if [[ $? -eq 0 ]]; then
+        msg_success "$service service ${action}d successfully."
+        return 0
+    else
+        msg_error "Failed to $action $service service."
+        return 1
+    fi
+}
+
+check_service_status() {
+    local service="$1"
+    local user_service="${2:-false}"
+
+    local systemctl_cmd="systemctl"
+    [[ "$user_service" == true ]] && systemctl_cmd="systemctl --user"
+
+    if $systemctl_cmd is-active --quiet "$service"; then
+        msg_success "$service is running."
+        return 0
+    else
+        msg_warning "$service is not running."
+        return 1
+    fi
+}
+
+# GitHub utilities
+github_download() {
+    local path="$1"
+    local output="$2"
+    local url="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/${GITHUB_BRANCH}/${path}"
+
+    msg_step "Downloading from GitHub..."
+    if curl -fsSL "$url" -o "$output"; then
+        msg_success "Downloaded successfully."
+        return 0
+    else
+        msg_error "Download failed."
+        return 1
+    fi
+}
+
+# Logging utilities
+create_log() {
+    local operation="$1"
+    local timestamp=$(date +%Y-%m-%dT%H-%M-%S)
+    local logfile="$LOG_DIR/${operation}_$timestamp.txt"
+
+    mkdir -p "$LOG_DIR"
+    echo "$logfile"
+}
+
+log_operation() {
+    local operation="$1"
+    local content="$2"
+    local logfile=$(create_log "$operation")
+
+    echo "$content" > "$logfile"
+    msg_success "Operation logged: $logfile"
+}
 
 pause() {
   echo ""
@@ -39,12 +359,13 @@ main_menu() {
   echo "8. 🎮 Install lib32* Multimedia"
   echo "9. 🎮 Install Gamemode and apply"
   echo "10. 🥚 Nvidia Configuration"
-  echo "11. 🧹 Cleaner and Maintanance"
-  echo "12. 🌸 HyDE/Hypr Personal Settings"
-  echo "13. ❌ Exit"
+  echo "11. 🔴 AMD Configuration"
+  echo "12. 🧹 Cleaner and Maintanance"
+  echo "13. 🌸 Reakjra's Hypr"
+  echo "14. ❌ Exit"
   echo ""
 
-  read -p "👉 Select an option (1-13): " choice
+  read -p "👉 Select an option (1-14): " choice
   case $choice in
   1) mount_drives_section ;;
   2) fix_dualboot_time ;;
@@ -56,9 +377,10 @@ main_menu() {
   8) install_lib32_multimedia ;;
   9) install_gamemode_section ;;
   10) nvidia_menu ;;
-  11) cleaner_menu ;;
-  12) wm_settings_menu ;;
-  13)
+  11) amd_menu ;;
+  12) cleaner_menu ;;
+  13) reakjra_hypr_menu ;;
+  14)
     echo "👋 Goodbye!"
     exit 0
     ;;
@@ -471,7 +793,7 @@ fix_dualboot_time() {
   pause
 }
 
-##################################### 🌸  INSTALL MANGOHUD & VKBASALT WITH CUSTOM CONFIGS
+# 🌸  INSTALL MANGOHUD & VKBASALT WITH CUSTOM CONFIGS
 install_gaming_monitoring_tools() {
   echo ""
   read -p "📊 Do you want to install MangoHud and vkBasalt with custom configs? (y/n): " confirm
@@ -484,28 +806,42 @@ install_gaming_monitoring_tools() {
     sudo pacman -S --noconfirm mangohud
   fi
 
-  if command -v vkBasalt &>/dev/null; then
-    echo "✅ vkBasalt is already installed."
+  if check_package "vkbasalt"; then
+    msg_success "vkBasalt is already installed."
   else
-    echo "📦 Installing vkBasalt..."
-    yay -S --noconfirm vkbasalt
+    msg_step "Installing vkBasalt..."
+    install_package "vkbasalt" "aur"
   fi
 
   mkdir -p ~/.config/MangoHud
   mango_dir="$HOME/.config/MangoHud"
   mango_conf="$mango_dir/MangoHud.conf"
 
+  # Check if MangoHud config already exists
   if [[ -f "$mango_conf" ]]; then
     echo ""
-    echo "⚠️ MangoHud config already exists."
+    msg_success "MangoHud config already exists."
+    if ! confirm "Do you want to overwrite the existing MangoHud configuration?"; then
+      msg_info "Keeping existing MangoHud configuration."
+    else
+      echo ""
+      msg_step "Choose MangoHud config type:"
+      echo "1) Minimal"
+      echo "2) Full"
+      echo "3) Dynamic (switch between Minimal/Full)"
+      config_choice=$(get_input "Enter your choice" "3")
+    fi
+  else
+    echo ""
+    msg_step "Choose MangoHud config type:"
+    echo "1) Minimal"
+    echo "2) Full"
+    echo "3) Dynamic (switch between Minimal/Full)"
+    config_choice=$(get_input "Enter your choice" "3")
   fi
 
-  echo ""
-  echo "🛠️ Choose MangoHud config type:"
-  echo "1) Minimal"
-  echo "2) Full"
-  echo "3) Dynamic (switch between Minimal/Full)"
-  read -p "Enter your choice (1/2/3): " config_choice
+  # Only proceed with config creation if we have a choice
+  if [[ -n "$config_choice" ]]; then
 
   if [[ "$config_choice" == "1" ]]; then
     echo "📝 Creating Minimal MangoHud config..."
@@ -725,38 +1061,15 @@ else
 fi
 EOF
     chmod +x "$switcher"
-    echo "✅ Dynamic profiles created. Default is MINIMAL."
+    msg_success "Dynamic profiles created. Default is MINIMAL."
     echo ""
-    read -p "⛓️ Do you want to add a Hyprland shortcut to toggle configs? (y/n): " add_key
-    echo ""
-    if [[ "$add_key" == "y" ]]; then
-      kb_line='bindn = RSHIFT, F10, exec, ~/.config/MangoHud/switch_mangohud.sh # MangoHud layout switch'
-      target=""
-      file1="$HOME/.config/hypr/custom/keybinds.conf"
-      file2="$HOME/.config/hypr/userprefs.conf"
-      file3="$HOME/.config/hypr/hyprland.conf"
-      if [[ -f "$file1" ]]; then
-        target="$file1"
-        echo "Found End-4 dotfiles. Using $target"
-      elif [[ -f "$file2" ]]; then
-        target="$file2"
-        echo "Found HyDE dotfiles. Using $target"
-      else
-        target="$file3"
-        mkdir -p "$(dirname "$target")"
-        [[ -f "$target" ]] || touch "$target"
-        echo "Using default Hyprland config at $target"
-      fi
-      if grep -Fqx "$kb_line" "$target"; then
-        echo "Keybind already present."
-        echo ""
-      else
-        { echo ""; echo "$kb_line"; } >> "$target"
-        echo ""
-        echo "✅ Keybind added to $target"
-        echo ""
-      fi
+    if confirm "⛓️ Do you want to add a Hyprland shortcut to toggle configs?"; then
+      local kb_line='bindn = RSHIFT, F10, exec, ~/.config/MangoHud/switch_mangohud.sh # MangoHud layout switch'
+      add_to_hypr_config "keybinds" "$kb_line" ""
     fi
+  fi
+
+  # Close the config creation if statement
   fi
 
   mkdir -p ~/.config/vkBasalt
@@ -783,158 +1096,193 @@ EOF
 ##################################### 🌸 Install Discord with fix
 install_discord_with_fix() {
   echo ""
-  read -p "💬 Do you want to install Discord? (y/n): " confirm
-  [[ "$confirm" != "y" ]] && return
-
-  if command -v discord &>/dev/null; then
-    echo "✅ Discord is already installed."
-  else
-    echo "📦 Installing Discord..."
-    sudo pacman -S --noconfirm discord
+  if ! confirm_or_exit "💬 Do you want to install Discord?"; then
+    return
   fi
 
-  echo ""
+  # Install Discord and dependencies
+  msg_step "Installing Discord and dependencies..."
+  local discord_packages=("discord" "jq")
+  install_packages "pacman" "${discord_packages[@]}"
 
-  if ! command -v jq &>/dev/null; then
-    echo "⚠️ 'jq' is required for editing settings.json. Installing..."
-    sudo pacman -S --noconfirm jq
+  echo ""
+  if ! confirm "🛠️ Do you want to apply the white update screen fix?"; then
+    pause
+    return
   fi
 
-  echo ""
-  read -p "🛠️ Do you want to apply the white update screen fix? (y/n): " apply_fix
-  [[ "$apply_fix" != "y" ]] && pause && return
-
-  echo "🔧 Applying Discord white screen fix..."
+  msg_step "Applying Discord white screen fix..."
 
   # --- Fix 1: Modify settings.json ---
-  config_dir="$HOME/.config/discord"
-  settings_file="$config_dir/settings.json"
+  local config_dir="$HOME/.config/discord"
+  local settings_file="$config_dir/settings.json"
 
   mkdir -p "$config_dir"
 
   if [[ -f "$settings_file" ]]; then
     if grep -q '"SKIP_HOST_UPDATE": true' "$settings_file"; then
-      echo "✅ 'SKIP_HOST_UPDATE' already set in settings.json"
+      msg_success "'SKIP_HOST_UPDATE' already set in settings.json"
     else
-      echo "✏️ Patching settings.json..."
-      tmp_file=$(mktemp)
+      msg_info "Patching settings.json..."
+      local tmp_file=$(mktemp)
       jq '. + {"SKIP_HOST_UPDATE": true}' "$settings_file" >"$tmp_file" && mv "$tmp_file" "$settings_file"
+      msg_success "settings.json patched successfully."
     fi
   else
-    echo "📝 Creating settings.json..."
+    msg_info "Creating settings.json..."
     cat <<EOF >"$settings_file"
 {
   "SKIP_HOST_UPDATE": true
 }
 EOF
+    msg_success "settings.json created."
   fi
 
   # --- Fix 2: Modify local desktop entry ---
-  desktop_dir="$HOME/.local/share/applications"
-  desktop_file="$desktop_dir/discord.desktop"
+  local desktop_dir="$HOME/.local/share/applications"
+  local desktop_file="$desktop_dir/discord.desktop"
 
   mkdir -p "$desktop_dir"
   cp /usr/share/applications/discord.desktop "$desktop_file" 2>/dev/null
 
   if [[ -f "$desktop_file" ]]; then
     sed -i 's|^Exec=.*|Exec=env QT_QPA_PLATFORM=xcb /usr/bin/discord|' "$desktop_file"
-    echo "✅ desktop file updated."
+    msg_success "Desktop file updated."
   else
-    echo "⚠️ Could not find system discord.desktop to copy."
+    msg_warning "Could not find system discord.desktop to copy."
   fi
 
-  echo "🔄 Updating desktop database..."
+  msg_info "Updating desktop database..."
   update-desktop-database "$desktop_dir"
 
-  echo -e "${GREEN}🎉 Discord is installed and fixed!${RESET}"
+  msg_success "🎉 Discord is installed and fixed!"
   pause
 }
 
 ##################################### 🌸 SPOTIFY & SPICETIFY
 install_spotify_spicetify() {
   echo ""
-  echo "🎵 This will install Spotify and patch it using Spicetify CLI + Marketplace."
-  read -p "Continue? (y/n): " confirm
-  [[ "$confirm" != "y" ]] && return
+  msg_info "🎵 This will install Spotify and patch it using Spicetify CLI + Marketplace."
 
-  echo "📦 Installing Spotify and Spicetify CLI..."
-  yay -S spotify --noconfirm
-  yay -S spicetify-cli --noconfirm
+  if ! confirm_or_exit "Continue with Spotify & Spicetify installation?"; then
+    return
+  fi
 
-  echo "🔧 Applying permissions to /opt/spotify..."
+  # Install Spotify and Spicetify CLI
+  msg_step "Installing Spotify and Spicetify CLI..."
+  local spotify_packages=("spotify" "spicetify-cli")
+  install_packages "aur" "${spotify_packages[@]}"
+
+  # Apply permissions to /opt/spotify
+  msg_step "Applying permissions to /opt/spotify..."
   sudo chmod a+wr /opt/spotify
   sudo chmod a+wr /opt/spotify/Apps -R
+  msg_success "Spotify permissions applied."
 
-  echo "🌐 Installing Spicetify Marketplace..."
-  curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh
+  # Install Spicetify Marketplace
+  msg_step "Installing Spicetify Marketplace..."
+  if curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh; then
+    msg_success "Spicetify Marketplace installed."
+  else
+    msg_warning "Spicetify Marketplace installation may have failed."
+  fi
 
-  echo "🛠️ Running spicetify backup + apply..."
+  # Run spicetify backup + apply
+  msg_step "Running spicetify backup + apply..."
   spicetify backup apply
 
-  echo "✅ Spotify and Spicetify successfully installed and patched!"
+  if [[ $? -eq 0 ]]; then
+    msg_success "✅ Spotify and Spicetify successfully installed and patched!"
+  else
+    msg_warning "Spicetify backup/apply may have encountered issues."
+  fi
+
   pause
 }
 
 ##################################### 🌸 LIB32 MULTIMEDIA
 install_lib32_multimedia() {
   echo ""
-  echo "🎮 This will install essential lib32 multimedia libraries for better audio/video support in some games."
-  echo "⚠️ This is especially useful for games like Resident Evil 2 Remake and Days Gone Remastered."
-  echo "⏳ The installation can take a while (~30 minutes depending on your system and internet speed)."
-  read -p "Do you want to continue? (y/n): " confirm
-  [[ "$confirm" != "y" ]] && return
+  msg_info "🎮 This will install essential lib32 multimedia libraries for better audio/video support in some games."
+  msg_warning "This is especially useful for games like Resident Evil 2 Remake and Days Gone Remastered."
+  msg_warning "⏳ The installation can take a while (~30 minutes depending on your system and internet speed)."
 
-  yay -S lib32-gstreamer lib32-gst-plugins-base lib32-gst-plugins-good lib32-gst-plugins-bad lib32-gst-plugins-ugly \
-    lib32-libva lib32-libx264 lib32-libvpx lib32-libmpeg2 lib32-openal \
-    lib32-libpulse lib32-ffmpeg lib32-vulkan-icd-loader --noconfirm
+  if ! confirm_or_exit "Do you want to continue with lib32 multimedia installation?"; then
+    return
+  fi
 
-  echo "✅ All lib32 multimedia libraries have been installed."
+  # Define lib32 multimedia packages
+  local lib32_packages=(
+    "lib32-gstreamer"
+    "lib32-gst-plugins-base"
+    "lib32-gst-plugins-good"
+    "lib32-gst-plugins-bad"
+    "lib32-gst-plugins-ugly"
+    "lib32-libva"
+    "lib32-libx264"
+    "lib32-libvpx"
+    "lib32-libmpeg2"
+    "lib32-openal"
+    "lib32-libpulse"
+    "lib32-ffmpeg"
+    "lib32-vulkan-icd-loader"
+  )
+
+  msg_step "Installing lib32 multimedia libraries..."
+  if install_packages "aur" "${lib32_packages[@]}"; then
+    msg_success "All lib32 multimedia libraries have been installed!"
+  else
+    msg_warning "Some packages may have failed to install. Check the output above."
+  fi
+
   pause
 }
 
 ##################################### 🌸 INSTALL GAMEMODE
 install_gamemode_section() {
   echo ""
-  read -p "🌸 Do you want to install and configure Gamemode? (y/n): " confirm
-  [[ "$confirm" != "y" ]] && return
-
-  # Step 1: Install gamemode
-  if command -v gamemoded &>/dev/null; then
-    echo "✅ Gamemode is already installed."
-  else
-    echo "📦 Installing Gamemode..."
-    sudo pacman -S --noconfirm gamemode lib32-gamemode
+  if ! confirm_or_exit "Do you want to install and configure Gamemode?"; then
+    return
   fi
 
+  # Step 1: Install gamemode
+  msg_step "Step 1: Installing Gamemode packages"
+  local gamemode_packages=("gamemode" "lib32-gamemode")
+  install_packages "pacman" "${gamemode_packages[@]}"
+
   # Step 2: Add user to gamemode group
+  msg_step "Step 2: Configuring user permissions"
   if groups $(whoami) | grep -qw "gamemode"; then
-    echo "✅ You are already part of the 'gamemode' group."
+    msg_success "You are already part of the 'gamemode' group."
   else
-    echo "👥 Adding current user to 'gamemode' group..."
-    sudo usermod -aG gamemode $(whoami)
-    echo "✅ User added to 'gamemode' group."
+    msg_info "Adding current user to 'gamemode' group..."
+    for group in "${GAMEMODE_GROUPS[@]}"; do
+      sudo usermod -aG "$group" $(whoami)
+    done
+    msg_success "User added to '${GAMEMODE_GROUPS[*]}' group(s)."
   fi
 
   # Step 3: Check if gamemoded is running
-  echo "🔍 Checking if gamemoded service is running..."
+  msg_step "Step 3: Checking gamemoded service status"
   if systemctl --user is-active --quiet gamemoded; then
-    echo "✅ Gamemoded is running under user session."
+    msg_success "Gamemoded is running under user session."
   elif systemctl is-active --quiet gamemoded; then
-    echo "✅ Gamemoded is running (system level)."
+    msg_success "Gamemoded is running (system level)."
   else
-    echo "⚠️ Gamemoded is not currently active."
-    echo "⏳ Trying to start it manually..."
+    msg_warning "Gamemoded is not currently active."
+    msg_info "Trying to start it manually..."
+
     systemctl --user start gamemoded 2>/dev/null || sudo systemctl start gamemoded
 
     if systemctl --user is-active --quiet gamemoded || systemctl is-active --quiet gamemoded; then
-      echo "✅ Gamemoded started successfully!"
+      msg_success "Gamemoded started successfully!"
     else
-      echo "⚠️ Could not start gamemoded. Try rebooting or launching it with 'gamemoded -d'."
+      msg_warning "Could not start gamemoded. Try rebooting or launching it with 'gamemoded -d'."
     fi
   fi
 
   echo ""
-  echo -e "${GREEN}🎉 Gamemode is installed and configured!${RESET}"
+  msg_success "🎉 Gamemode is installed and configured!"
   pause
 }
 
@@ -1074,18 +1422,43 @@ EOF
 }
 
 
-#################################### 🌸 WM SETTINGS MENU
-wm_settings_menu() {
+#################################### 🌸 REAKJRA'S HYPR MENU
+reakjra_hypr_menu() {
   while true; do
     clear
     echo ""
-    echo -e "🌸${RED} WM Personal Settings (HyDE only) 🌸 ${RESET} "
+    msg_section "Reakjra's Hypr 🌸"
+    echo ""
+    msg_info "This will import custom Hyprland configurations for each ricing setup."
+    msg_info "All configurations are Reakjra's personal setups and preferences."
+    echo ""
+    echo "1. 🏠 HyDE Configuration"
+    echo "2. 🔚 End4 Configuration"
+    echo "3. 👈 Back to main menu"
+    echo ""
+    read -p "Choose an option: " choice
+
+    case "$choice" in
+    1) hyde_config_menu ;;
+    2) end4_config_menu ;;
+    3) break ;;
+    *) echo "❌ Invalid option." ;;
+    esac
+  done
+}
+
+#################################### 🌸 HYDE CONFIGURATION MENU
+hyde_config_menu() {
+  while true; do
+    clear
+    echo ""
+    msg_section "HyDE Configuration 🌸"
     echo ""
     echo "1. 🍼 Import userprefs.conf (it will override the current one)"
     echo "2. 🍼 Import windowrules.conf (it will override the current one)"
     echo "3. 🍼 Import Reakjra's Waybar settings"
     echo "4. 🍼 Apply wallbash theme to Visual Studio Code"
-    echo "5. 👈 Back to main menu"
+    echo "5. 👈 Back to Reakjra's Hypr menu"
     echo ""
     read -p "Choose an option: " choice
 
@@ -1098,6 +1471,29 @@ wm_settings_menu() {
     *) echo "❌ Invalid option." ;;
     esac
   done
+}
+
+#################################### 🌸 END4 CONFIGURATION MENU
+end4_config_menu() {
+  clear
+  echo ""
+  msg_section "End4 Configuration 🌸"
+  echo ""
+  msg_info "🚧 Working on it..."
+  msg_info "End4 configurations are currently being developed and will be available soon!"
+  echo ""
+  echo "1. 👈 Back to Reakjra's Hypr menu"
+  echo ""
+  read -p "Choose an option: " choice
+
+  case "$choice" in
+  1) return ;;
+  *)
+    msg_warning "Invalid option."
+    sleep 1
+    end4_config_menu
+    ;;
+  esac
 }
 
 ##################################### 🌸 WM SETTINGS: USERPREFS
@@ -1433,11 +1829,18 @@ cleaner_menu() {
 ####################################
 clean_pacman_cache() {
   echo ""
-  read -p "❓ Do you want to clean pacman cache? (y/n): " confirm
-  if [[ "$confirm" == "y" ]]; then
-    logfile="$LOG_DIR/clean_pacman_cache_$(date +%Y-%m-%dT%H-%M-%S).txt"
-    sudo pacman -Sc --noconfirm | tee "$logfile"
-    echo "📝 Log saved: $logfile"
+  if confirm "Do you want to clean pacman cache?"; then
+    local logfile=$(create_log "clean_pacman_cache")
+    msg_step "Cleaning pacman cache..."
+
+    if sudo pacman -Sc --noconfirm | tee "$logfile"; then
+      msg_success "Pacman cache cleaned successfully."
+      msg_info "Log saved: $logfile"
+    else
+      msg_error "Failed to clean pacman cache."
+    fi
+  else
+    msg_info "Pacman cache cleaning skipped."
   fi
   pause
 }
@@ -1445,11 +1848,18 @@ clean_pacman_cache() {
 ####################################
 clean_yay_cache() {
   echo ""
-  read -p "❓ Do you want to clean yay cache? (y/n): " confirm
-  if [[ "$confirm" == "y" ]]; then
-    logfile="$LOG_DIR/clean_yay_cache_$(date +%Y-%m-%dT%H-%M-%S).txt"
-    yay -Sc --noconfirm | tee "$logfile"
-    echo "📝 Log saved: $logfile"
+  if confirm "Do you want to clean $AUR_HELPER cache?"; then
+    local logfile=$(create_log "clean_${AUR_HELPER}_cache")
+    msg_step "Cleaning $AUR_HELPER cache..."
+
+    if "$AUR_HELPER" -Sc --noconfirm | tee "$logfile"; then
+      msg_success "$AUR_HELPER cache cleaned successfully."
+      msg_info "Log saved: $logfile"
+    else
+      msg_error "Failed to clean $AUR_HELPER cache."
+    fi
+  else
+    msg_info "$AUR_HELPER cache cleaning skipped."
   fi
   pause
 }
@@ -1457,20 +1867,32 @@ clean_yay_cache() {
 ####################################
 remove_orphans() {
   echo ""
-  echo "🔍 Searching for orphaned packages..."
+  msg_step "Searching for orphaned packages..."
+
+  local orphans
   orphans=$(pacman -Qtdq 2>/dev/null)
+
   if [[ -z "$orphans" ]]; then
-    echo "✅ No orphaned packages found!"
+    msg_success "No orphaned packages found!"
   else
-    echo "🧺 Orphans found:"
-    echo "$orphans"
-    read -p "❓ Remove them? (y/n): " confirm
-    if [[ "$confirm" == "y" ]]; then
-      timestamp=$(date +%Y-%m-%dT%H-%M-%S)
-      logfile="$LOG_DIR/remove_orphans_$timestamp.txt"
+    echo ""
+    msg_warning "🧺 Orphans found:"
+    echo -e "${CYAN}$orphans${RESET}"
+    echo ""
+
+    if confirm "Remove these orphaned packages?"; then
+      local logfile=$(create_log "remove_orphans")
       echo "$orphans" >"$logfile"
-      sudo pacman -Rns $orphans
-      echo "📝 Orphan removal log saved at $logfile"
+
+      msg_step "Removing orphaned packages..."
+      if sudo pacman -Rns $orphans; then
+        msg_success "Orphaned packages removed successfully."
+        msg_info "Orphan removal log saved at $logfile"
+      else
+        msg_error "Failed to remove some orphaned packages."
+      fi
+    else
+      msg_info "Orphan removal skipped."
     fi
   fi
   pause
@@ -1479,23 +1901,41 @@ remove_orphans() {
 ####################################
 full_update() {
   echo ""
-  echo "📦 Running full system update..."
-  timestamp=$(date +%Y-%m-%dT%H-%M-%S)
-  logfile="$LOG_DIR/full_update_$timestamp.txt"
+  msg_section "Running full system update..."
+
+  local logfile=$(create_log "full_update")
+
+  msg_step "Updating official repositories (pacman)..."
   {
+    echo "=== PACMAN UPDATE ==="
     sudo pacman -Syu --noconfirm
-    yay -Syu --noconfirm
+    echo ""
+    echo "=== AUR UPDATE ($AUR_HELPER) ==="
+    "$AUR_HELPER" -Syu --noconfirm
   } | tee "$logfile"
-  echo "📝 Update log saved: $logfile"
+
+  if [[ ${PIPESTATUS[0]} -eq 0 ]]; then
+    msg_success "System update completed successfully!"
+  else
+    msg_warning "System update completed with some warnings or errors."
+  fi
+
+  msg_info "Update log saved: $logfile"
   pause
 }
 
 check_cache_sizes() {
   echo ""
-  echo "🔍 pacman cache:"
-  du -sh /var/cache/pacman/pkg
-  echo "🔍 yay cache:"
-  du -sh ~/.cache/yay
+  msg_step "Checking cache sizes..."
+
+  echo ""
+  msg_info "📦 Pacman cache size:"
+  du -sh /var/cache/pacman/pkg 2>/dev/null || msg_warning "Could not access pacman cache directory."
+
+  echo ""
+  msg_info "📦 $AUR_HELPER cache size:"
+  du -sh ~/.cache/"$AUR_HELPER" 2>/dev/null || du -sh ~/.cache/yay 2>/dev/null || msg_warning "Could not access $AUR_HELPER cache directory."
+
   pause
 }
 
@@ -1808,7 +2248,7 @@ nvidia_fan_setup() {
   echo ""
   echo "This setup will allow you to apply a custom fan curve and undervolt your NVIDIA GPU."
   echo ""
-  echo -e "⚠️ These settings are tuned for a 2-fan GPU (e.g., 3060 Ti). Adjust only if you know what you're doing. Mind the Power Limit is set to 130w. Change it in ${CYAN}reakjra.conf.sh${RESET} if you need to."
+  echo -e "⚠️ These settings are tuned for a 2-fan GPU (e.g., 3060 Ti). Adjust only if you know what you're doing. Mind the Power Limit is set to ${NVIDIA_POWER_LIMIT}w. Change it in ${CYAN}reakjra.conf.sh${RESET} if you need to."
   echo
 
   # Step 1: Install Required Packages
@@ -1854,38 +2294,30 @@ EOF
   fi
 
   # Step 4: Create undervolt script (power limit)
-  echo -e "\n🌸 Step 4: Create undervolt script (gpu-limit.sh)"
-  read -rp "Create gpu-limit.sh? [Y/n]: " create_gpu_limit
-  if [[ "$create_gpu_limit" =~ ^[Yy]$ || -z "$create_gpu_limit" ]]; then
+  msg_step "Step 4: Create undervolt script (gpu-limit.sh)"
+  if confirm "Create gpu-limit.sh?"; then
     cat >~/gpu-limit.sh <<EOF
 #!/bin/bash
-sudo nvidia-smi -pl 150
+sudo nvidia-smi -pl ${NVIDIA_POWER_LIMIT}
 EOF
     sudo chmod +x ~/gpu-limit.sh
-    echo "✅ gpu-limit.sh created and made executable."
+    msg_success "gpu-limit.sh created and made executable."
   fi
 
   # Step 5: Create fan curve control script
-  echo -e "\n🌸 Step 5: Create fan curve script (nvidia_fan_control.sh)"
-  read -rp "Create fan control script? [Y/n]: " create_fan_script
-  if [[ "$create_fan_script" =~ ^[Yy]$ || -z "$create_fan_script" ]]; then
-    cat >~/nvidia_fan_control.sh <<'EOF'
+  msg_step "Step 5: Create fan curve script (nvidia_fan_control.sh)"
+  if confirm "Create fan control script?"; then
+    cat >~/nvidia_fan_control.sh <<EOF
 #!/bin/bash
 
 LOG_FILE="/tmp/nvidia_fan_control.log"
-> "$LOG_FILE"
-exec > >(tee -a "$LOG_FILE") 2>&1
+> "\$LOG_FILE"
+exec > >(tee -a "\$LOG_FILE") 2>&1
 
 FAN_CURVE=(
-    "40:30"
-    "50:40"
-    "60:50"
-    "70:65"
-    "75:70"
-    "80:75"
-    "90:100"
+$(printf '    "%s"\n' "${NVIDIA_FAN_CURVE[@]}")
 )
-INTERVAL_SECONDS=5
+INTERVAL_SECONDS=${NVIDIA_FAN_INTERVAL}</EOF
 
 run_nvidia_settings() {
     export DISPLAY="${DISPLAY:-:0}"
@@ -1898,10 +2330,10 @@ get_gpu_temp() {
 }
 
 set_fan_speed() {
-    local speed_percent=$1
-    local fans_to_control=("0" "1")
-    for fan_id in "${fans_to_control[@]}"; do
-        run_nvidia_settings -a "[fan:${fan_id}]/GPUTargetFanSpeed=${speed_percent}"
+    local speed_percent=\$1
+    local fans_to_control=($(printf '"%s" ' "${NVIDIA_FAN_IDS[@]}"))
+    for fan_id in "\${fans_to_control[@]}"; do
+        run_nvidia_settings -a "[fan:\${fan_id}]/GPUTargetFanSpeed=\${speed_percent}"
     done
 }
 
@@ -1920,12 +2352,11 @@ while true; do
     done
     echo "GPU Temp: ${GPU_TEMP}°C, Fan Speed: ${TARGET_SPEED}%"
     set_fan_speed "$TARGET_SPEED"
-    sleep "$INTERVAL_SECONDS"
+    sleep "\$INTERVAL_SECONDS"
 done
 EOF
     sudo chmod +x ~/nvidia_fan_control.sh
-    echo "✅ nvidia_fan_control.sh created and made executable."
-    echo ""
+    msg_success "nvidia_fan_control.sh created and made executable."
   fi
 
   # Step 6: Add xhost line for root display access
@@ -1942,33 +2373,12 @@ EOF
 
   echo -e "\n✅ Setup complete!"
   echo ""
-  echo -e "\n🌸 Step 7: Autostart configuration for Hyprland"
-  read -rp "Do you want to automatically start the fan and power limit scripts on boot? [Y/n]: " autostart_confirm
-  if [[ "$autostart_confirm" =~ ^[Yy]$ || -z "$autostart_confirm" ]]; then
-    AUTOSTART_LINE1='exec = ~/gpu-limit.sh'
-    AUTOSTART_LINE2='exec-once = bash -c "sleep 1 && xhost +si:localuser:root && sleep 2 && ~/nvidia_fan_control.sh &"'
-
-    if [[ -f "$HOME/.config/hypr/userprefs.conf" ]]; then
-      echo -e "\n✅ Detected HyDE userprefs.conf"
-      echo -e "\n# NVIDIA GPU Scripts" >>"$HOME/.config/hypr/userprefs.conf"
-      echo "$AUTOSTART_LINE1" >>"$HOME/.config/hypr/userprefs.conf"
-      echo "$AUTOSTART_LINE2" >>"$HOME/.config/hypr/userprefs.conf"
-      echo "✅ Added to ~/.config/hypr/userprefs.conf"
-    elif [[ -f "$HOME/.config/hypr/hyprland.conf" ]]; then
-      echo -e "\nℹ️ userprefs.conf not found. Falling back to hyprland.conf."
-      echo -e "\n# NVIDIA GPU Scripts" >>"$HOME/.config/hypr/hyprland.conf"
-      echo "$AUTOSTART_LINE1" >>"$HOME/.config/hypr/hyprland.conf"
-      echo "$AUTOSTART_LINE2" >>"$HOME/.config/hypr/hyprland.conf"
-      echo "✅ Added to ~/.config/hypr/hyprland.conf"
-    else
-      echo -e "\n❌ Could not find any Hyprland configuration file."
-      echo "Please add the following lines manually to your config:"
-      echo "$AUTOSTART_LINE1"
-      echo "$AUTOSTART_LINE2"
-    fi
+  msg_step "Step 7: Autostart configuration for Hyprland"
+  if confirm "Automatically start the fan and power limit scripts on boot?"; then
+    add_to_hypr_config "execs" "exec = ~/gpu-limit.sh" "NVIDIA GPU Scripts"
+    add_to_hypr_config "execs" 'exec-once = bash -c "sleep 1 && xhost +si:localuser:root && sleep 2 && ~/nvidia_fan_control.sh &"' ""
   else
-    echo ""
-    echo "⚠️ Skipping autostart. You'll need to launch the scripts manually."
+    msg_warning "Skipping autostart. You'll need to launch the scripts manually."
   fi
 
   echo ""
@@ -2008,6 +2418,177 @@ install_zen_kernel_nvidia() {
   pause
 }
 
+##################################### AMD RELATED
+
+amd_menu() {
+  while true; do
+    clear
+    echo ""
+    echo -e "🌸${RED} AMD Personal Configuration 🌸 ${RESET} "
+    echo ""
+    echo "1. 🐧 Install Zen Kernel (AMD)"
+    echo "2. 🔴 Install AMD Drivers & Utils"
+    echo "3. 🌡️ Install LACT (Linux AMDGPU Control Tool)"
+    echo "4. 🤖 Install Ollama-ROCm"
+    echo "5. 👈 Back to main menu"
+    echo ""
+    read -p "Choose an option: " choice
+
+    case "$choice" in
+    1) install_zen_kernel_amd ;;
+    2) install_amd_drivers_utils ;;
+    3) install_lact ;;
+    4) install_ollama_rocm ;;
+    5) break ;;
+    *) echo "❌ Invalid option." ;;
+    esac
+  done
+}
+
+####################################
+install_zen_kernel_amd() {
+  echo ""
+  read -p "🌸 Do you want to install the Linux-Zen Kernel for AMD? (y/n): " confirm
+  [[ "$confirm" != "y" ]] && return
+
+  echo ""
+  echo "🐧 Installing Linux-Zen Kernel and headers..."
+  sudo pacman -S --noconfirm linux-zen linux-zen-headers
+
+  echo ""
+  echo "🔴 Installing AMD microcode for better performance..."
+  sudo pacman -S --noconfirm amd-ucode
+
+  echo ""
+  read -p "⚙️  Do you want to regenerate your GRUB config? (y/n): " update_grub
+  if [[ "$update_grub" == "y" ]]; then
+    echo "📝 Updating GRUB config..."
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+  else
+    echo "🔕 Skipping GRUB config update..."
+  fi
+
+  echo -e "${GREEN}🌸 Zen Kernel installation complete! You can select it from GRUB on next boot.${RESET}"
+  pause
+}
+
+####################################
+install_amd_drivers_utils() {
+  clear
+  msg_section "AMD Drivers Installation 🌸"
+  echo ""
+  msg_info "This will install essential AMD GPU drivers for optimal performance."
+  echo ""
+  msg_info "This includes: ${CYAN}mesa, xf86-video-amdgpu, vulkan-radeon, and lib32 variants${RESET}"
+  echo
+
+  # Install AMD drivers
+  msg_step "Installing AMD graphics drivers..."
+  if confirm "Install AMD graphics drivers?"; then
+    local amd_drivers=(
+      "mesa"
+      "xf86-video-amdgpu"
+      "vulkan-radeon"
+      "lib32-mesa"
+      "lib32-vulkan-radeon"
+      "lib32-vulkan-icd-loader"
+    )
+
+    if install_packages "pacman" "${amd_drivers[@]}"; then
+      msg_success "All AMD graphics drivers installed successfully!"
+    else
+      msg_warning "Some packages may have failed to install. Check the output above."
+    fi
+  else
+    msg_info "Skipping AMD graphics drivers."
+  fi
+
+  echo ""
+  msg_success "AMD drivers installation complete!"
+  echo ""
+  pause
+}
+
+####################################
+install_lact() {
+  clear
+  msg_section "LACT (Linux AMDGPU Control Tool) Installation 🌸"
+  echo ""
+  msg_info "LACT is a Linux AMDGPU Control application for controlling fans, temperature, power, and overclocking."
+  echo ""
+  msg_warning "LACT requires GPU access permissions and systemd service configuration."
+  echo ""
+
+  # Check if LACT is already installed
+  if check_package "lact"; then
+    msg_success "LACT is already installed."
+    if ! confirm "Do you want to reinstall/reconfigure it?" false; then
+      return
+    fi
+  fi
+
+  # Step 1: Install LACT
+  msg_step "Step 1: Install LACT"
+  if confirm_or_exit "Install LACT from AUR?"; then
+    if ! install_package "lact" "aur"; then
+      msg_error "Cannot proceed without LACT installation."
+      pause
+      return
+    fi
+  fi
+
+  # Step 2: Configure permissions
+  msg_step "Step 2: Configure GPU access permissions"
+  if confirm "Add user to necessary groups for GPU access?"; then
+    sudo usermod -aG render,video $(whoami)
+    msg_success "User added to render and video groups."
+    msg_info "You may need to log out and back in for group changes to take effect."
+  fi
+
+  # Step 3: Enable and start LACT daemon
+  msg_step "Step 3: Configure LACT daemon"
+  if confirm "Enable and start LACT daemon?"; then
+    if manage_service "enable-now" "lactd"; then
+      check_service_status "lactd"
+    fi
+  else
+    msg_warning "LACT daemon not enabled. Manual configuration required."
+  fi
+
+  echo ""
+  msg_success "LACT installation and configuration complete!"
+  msg_info "Use LACT to control fan curves, power limits, and monitor GPU stats."
+  echo ""
+  pause
+}
+
+####################################
+install_ollama_rocm() {
+  clear
+  msg_section "Ollama-ROCm Installation 🌸"
+  echo ""
+  msg_info "This will install Ollama with ROCm support for AMD GPU acceleration."
+  echo ""
+
+  # Check if already installed
+  if check_package "ollama-rocm"; then
+    msg_success "Ollama-ROCm is already installed."
+    pause
+    return
+  fi
+
+  # Install ollama-rocm
+  msg_step "Installing Ollama-ROCm..."
+  if confirm_or_exit "Install Ollama-ROCm package?"; then
+    if install_package "ollama-rocm" "pacman"; then
+      msg_success "Ollama-ROCm installation complete!"
+      msg_info "Ollama should now be able to use your AMD GPU for AI inference."
+    fi
+  fi
+
+  echo ""
+  pause
+}
 
 
 ##################################### 🔁 MAIN MENU LOOP

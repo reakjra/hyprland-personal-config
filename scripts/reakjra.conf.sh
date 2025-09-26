@@ -60,8 +60,6 @@ RESET="\e[0m"
 BOLD='\e[1m'
 DIM='\e[2m'
 
-LOG_DIR="$HOME/reakjra-CC-logs"
-
 ##################################### 🌸 UTILITY FUNCTIONS
 # Consistent UI/UX functions used throughout the script
 

@@ -48,6 +48,7 @@ GITHUB_BRANCH="main"               # Branch to use
 
 
 #TODO: default packages installer: Gwenview, mpv, Ark, Kate | Flatpak, Warehouse // useful for more minimalist Hyprland rices
+#TODO: D.R.Y.
 
 # Pretty colors & format
 GREEN="\e[32m"

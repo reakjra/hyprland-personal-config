@@ -6,7 +6,7 @@ This README includes tips, scripts, and setup instructions that I've collected t
 ```sh
 EndeavourOS 
 32GB RAM
-3060 Ti
+3060 Ti (9070 XT now)
 i5-13600K
 ```
 
@@ -29,6 +29,7 @@ i5-13600K
 - [🌈 Extra: Gamma, Contrast and Saturation](#extra-gamma-contrast-and-saturation)
 - [🎮 Gaming Related](https://github.com/reakjra/hyprland-personal-config/blob/main/gaming/readme.md)
 - [🤖 Waydroid + Libhoudini](#waydroid)
+- [🌸 SDDM](#sddm)
 - [🌸 Setting up WM](#setting-up-wm)
 - [🌸 Scripts](https://github.com/reakjra/hyprland-personal-config/blob/main/scripts/)
 
@@ -333,6 +334,40 @@ NoDisplay=false
 
 ---
 
+
+## SDDM
+> Since SDDM absolutely fucking atrociously hates Wayland, to customize the refresh rate, it is needed to force it to use X11. Fuck you SDDM.
+```sh
+sudo nano /etc/sddm.conf
+```
+> if this exists: 
+```sh
+[General]
+WaylandEnable=true
+```
+> Obliterate it with:
+```sh
+[General]
+WaylandEnable=false
+DisplayServer=x11
+DefaultSession=hyprland.desktop
+
+[X11]
+ServerPath=/usr/bin/Xorg
+```
+> Get your monitor ID with this (It won't work with xrandr ID.): 
+```sh
+sudo cat /var/log/Xorg.0.log | grep -i connected
+```
+> Update XSetup
+```sh
+sudo nano /usr/share/sddm/scripts/Xsetup
+
+#!/bin/sh
+xrandr --output DisplayPort-4 --mode 2560x1440 --rate 180
+
+chmod +x /usr/share/sddm/scripts/Xsetup
+```
 ## Setting up WM
 
 > This section is tied to my personal preferences for my machine.
@@ -369,6 +404,7 @@ exec-once = [workspace 3 silent] firefox
 ```
 
 > The core idea is to make the gaming library all inside Steam. If it is needed to run something through Bottles, Lutris, etc. I´d add a non-Steam game into Steam's library and target it with the needed cli.
+
 
 
 
